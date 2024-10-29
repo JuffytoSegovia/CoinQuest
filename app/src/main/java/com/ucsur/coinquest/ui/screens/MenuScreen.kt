@@ -18,7 +18,13 @@ import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.R
 
 @Composable
-fun MenuScreen() {
+fun MenuScreen(
+    onNavigateToGame: () -> Unit = {},
+    onNavigateToCharacters: () -> Unit = {},
+    onNavigateToScores: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToCredits: () -> Unit = {}
+) {
     var selectedButton by remember { mutableStateOf<String?>(null) }
 
     Box(
@@ -63,24 +69,56 @@ fun MenuScreen() {
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // Botones
+            // Botones del menú
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 16.dp)
             ) {
-                MenuButton("Jugar", selectedButton == "jugar") {
-                    selectedButton = "jugar"
-                }
-                MenuButton("Personajes", selectedButton == "personajes") {
-                    selectedButton = "personajes"
-                }
-                MenuButton("Puntajes", selectedButton == "puntajes") {
-                    selectedButton = "puntajes"
-                }
-                MenuButton("Créditos", selectedButton == "creditos") {
-                    selectedButton = "creditos"
-                }
+                MenuButton(
+                    text = "Jugar",
+                    isSelected = selectedButton == "jugar",
+                    onClick = {
+                        selectedButton = "jugar"
+                        onNavigateToGame()
+                    }
+                )
+
+                MenuButton(
+                    text = "Personajes",
+                    isSelected = selectedButton == "personajes",
+                    onClick = {
+                        selectedButton = "personajes"
+                        onNavigateToCharacters()
+                    }
+                )
+
+                MenuButton(
+                    text = "Puntajes",
+                    isSelected = selectedButton == "puntajes",
+                    onClick = {
+                        selectedButton = "puntajes"
+                        onNavigateToScores()
+                    }
+                )
+
+                MenuButton(
+                    text = "Ajustes",
+                    isSelected = selectedButton == "ajustes",
+                    onClick = {
+                        selectedButton = "ajustes"
+                        onNavigateToSettings()
+                    }
+                )
+
+                MenuButton(
+                    text = "Créditos",
+                    isSelected = selectedButton == "creditos",
+                    onClick = {
+                        selectedButton = "creditos"
+                        onNavigateToCredits()
+                    }
+                )
             }
         }
     }
