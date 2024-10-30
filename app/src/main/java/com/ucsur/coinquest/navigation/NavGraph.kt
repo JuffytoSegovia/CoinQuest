@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ucsur.coinquest.ui.screens.SplashScreen
 import com.ucsur.coinquest.ui.screens.MenuScreen
 import com.ucsur.coinquest.ui.screens.CreditsScreen
+import com.ucsur.coinquest.ui.screens.CharactersScreen
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -57,7 +58,9 @@ fun NavGraph(
         }
 
         composable(Screen.Characters.route) {
-            // CharactersScreen()
+            CharactersScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
 
         composable(Screen.Scores.route) {
