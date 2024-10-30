@@ -5,10 +5,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.ucsur.coinquest.ui.screens.SplashScreen
-import com.ucsur.coinquest.ui.screens.MenuScreen
-import com.ucsur.coinquest.ui.screens.CreditsScreen
-import com.ucsur.coinquest.ui.screens.CharactersScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ucsur.coinquest.ui.screens.*
+import com.ucsur.coinquest.viewmodel.GameViewModel
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -22,7 +21,9 @@ sealed class Screen(val route: String) {
 
 @Composable
 fun NavGraph(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    viewModel: GameViewModel = viewModel(),
+    onExitApp: () -> Unit = {} // Añadir este parámetro
 ) {
     NavHost(
         navController = navController,
@@ -40,27 +41,46 @@ fun NavGraph(
 
         composable(Screen.Menu.route) {
             MenuScreen(
-                onNavigateToGame = { navController.navigate(Screen.Game.route) },
-                onNavigateToCharacters = { navController.navigate(Screen.Characters.route) },
+                onNavigateToGame = {
+                    // Al dar click en Jugar, vamos directamente a la selección de personaje
+                    navController.navigate(Screen.Characters.route)
+                },
                 onNavigateToScores = { navController.navigate(Screen.Scores.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToCredits = { navController.navigate(Screen.Credits.route) }
             )
         }
 
-        composable(Screen.Credits.route) {
-            CreditsScreen()
-        }
-
-        // Las siguientes pantallas serán implementadas después
         composable(Screen.Game.route) {
-            // GameScreen()
+            GameScreen(
+                viewModel = viewModel,
+                onNavigateToCharacterSelect = {
+                    navController.navigate(Screen.Characters.route)
+                },
+                onNavigateToMenu = {
+                    navController.navigate(Screen.Menu.route) {
+                        // Limpiamos el back stack hasta el menú
+                        popUpTo(Screen.Menu.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Screen.Characters.route) {
             CharactersScreen(
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() },
+                onCharacterSelected = { character ->
+                    viewModel.setSelectedCharacter(character)
+                    navController.navigate(Screen.Game.route) {
+                        // Limpiamos el back stack hasta el menú
+                        popUpTo(Screen.Menu.route)
+                    }
+                }
             )
+        }
+
+        composable(Screen.Credits.route) {
+            CreditsScreen()
         }
 
         composable(Screen.Scores.route) {

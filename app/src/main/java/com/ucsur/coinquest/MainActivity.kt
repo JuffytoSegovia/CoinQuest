@@ -11,7 +11,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CoinQuestTheme {
-                NavGraph()
+                NavGraph(
+                    onExitApp = {
+                        finish()
+                    }
+                )
             }
         }
     }

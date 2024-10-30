@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.R
@@ -29,11 +28,13 @@ import com.ucsur.coinquest.model.GameCharacter
 
 @Composable
 fun CharactersScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit,
+    onCharacterSelected: (GameCharacter) -> Unit
 ) {
     var selectedCharacter by remember { mutableStateOf<GameCharacter?>(null) }
     var showNameDialog by remember { mutableStateOf(false) }
     var customName by remember { mutableStateOf("") }
+    var isCharacterConfirmed by remember { mutableStateOf(false) }
 
     val characters = listOf(
         GameCharacter(1, "Juffy", R.drawable.juffy),
@@ -42,74 +43,90 @@ fun CharactersScreen(
         GameCharacter(4, "Tiff", R.drawable.tiff)
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Agregar botón de retorno
-        IconButton(
-            onClick = onNavigateBack,
-            modifier = Modifier.align(Alignment.Start)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver"
-            )
-        }
-
-        Text(
-            text = "Selecciona tu Personaje",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
-
-        if (selectedCharacter == null) {
-            Text(
-                text = "Debes seleccionar un personaje antes de jugar",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(8.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(characters) { character ->
-                CharacterCard(
-                    character = character,
-                    isSelected = selectedCharacter?.id == character.id,
-                    onClick = {
-                        selectedCharacter = character
-                        showNameDialog = true
-                    }
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.align(Alignment.Start)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver"
                 )
             }
-        }
 
-        if (selectedCharacter != null) {
             Text(
-                text = "Personaje seleccionado: ${selectedCharacter?.customName ?: selectedCharacter?.defaultName}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
+                text = "Selecciona tu Personaje",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(vertical = 16.dp)
             )
 
-            Button(
-                onClick = { showNameDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 8.dp)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(8.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Text("Cambiar Nombre")
+                items(characters) { character ->
+                    CharacterCard(
+                        character = character,
+                        isSelected = selectedCharacter?.id == character.id,
+                        onClick = {
+                            selectedCharacter = character
+                            isCharacterConfirmed = false
+                            showNameDialog = true
+                        }
+                    )
+                }
+            }
+
+            selectedCharacter?.let { character ->
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Personaje seleccionado: ${character.customName ?: character.defaultName}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { showNameDialog = true },
+                        modifier = Modifier.fillMaxWidth(0.8f)
+                    ) {
+                        Text("Cambiar Nombre")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { onCharacterSelected(character) },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(
+                            "¡Comenzar Juego!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }
@@ -119,9 +136,10 @@ fun CharactersScreen(
             defaultName = selectedCharacter?.defaultName ?: "",
             currentName = customName,
             onNameConfirm = { name ->
-                selectedCharacter?.customName = name.takeIf { it.isNotBlank() }
+                selectedCharacter?.customName = name.takeIf { name.isNotBlank() }
                 customName = name
                 showNameDialog = false
+                isCharacterConfirmed = true
             },
             onDismiss = { showNameDialog = false }
         )

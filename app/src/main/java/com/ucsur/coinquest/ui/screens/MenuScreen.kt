@@ -16,16 +16,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.R
+import androidx.activity.compose.BackHandler
 
 @Composable
 fun MenuScreen(
     onNavigateToGame: () -> Unit = {},
-    onNavigateToCharacters: () -> Unit = {},
     onNavigateToScores: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToCredits: () -> Unit = {}
 ) {
     var selectedButton by remember { mutableStateOf<String?>(null) }
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    // Manejador del botón de retroceso
+    BackHandler {
+        showExitDialog = true
+    }
 
     Box(
         modifier = Modifier
@@ -85,15 +91,6 @@ fun MenuScreen(
                 )
 
                 MenuButton(
-                    text = "Personajes",
-                    isSelected = selectedButton == "personajes",
-                    onClick = {
-                        selectedButton = "personajes"
-                        onNavigateToCharacters()
-                    }
-                )
-
-                MenuButton(
                     text = "Puntajes",
                     isSelected = selectedButton == "puntajes",
                     onClick = {
@@ -120,6 +117,44 @@ fun MenuScreen(
                     }
                 )
             }
+        }
+
+        // Diálogo de confirmación de salida
+        if (showExitDialog) {
+            AlertDialog(
+                onDismissRequest = { showExitDialog = false },
+                title = {
+                    Text(
+                        "Salir del juego",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    Text(
+                        "¿Estás seguro que deseas salir?",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            android.os.Process.killProcess(android.os.Process.myPid())
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Salir")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { showExitDialog = false }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }
