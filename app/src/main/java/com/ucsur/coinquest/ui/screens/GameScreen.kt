@@ -190,7 +190,7 @@ private fun GamePlayScreen(
                     MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                     RoundedCornerShape(16.dp)
                 )
-        )  {
+        ) {
             // Cuadrícula
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val gridSize = 50f
