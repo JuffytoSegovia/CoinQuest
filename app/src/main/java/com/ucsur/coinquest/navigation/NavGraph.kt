@@ -1,6 +1,7 @@
 package com.ucsur.coinquest.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,6 +11,7 @@ import com.ucsur.coinquest.ui.screens.*
 import com.ucsur.coinquest.viewmodel.GameViewModel
 import com.ucsur.coinquest.viewmodel.GameViewModelFactory
 import com.ucsur.coinquest.utils.SoundManager
+import com.ucsur.coinquest.viewmodel.SettingsViewModel
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -98,7 +100,10 @@ fun NavGraph(
         }
 
         composable(Screen.Settings.route) {
-            // SettingsScreen()
+            SettingsScreen(
+                viewModel = remember { SettingsViewModel(soundManager) },
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
     }
 }
