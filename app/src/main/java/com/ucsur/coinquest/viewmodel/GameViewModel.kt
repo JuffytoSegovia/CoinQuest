@@ -5,13 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.ucsur.coinquest.model.GameState
 import com.ucsur.coinquest.model.GameCharacter
 import com.ucsur.coinquest.model.Position
+import com.ucsur.coinquest.utils.SoundManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 
-class GameViewModel : ViewModel() {
+class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
 
     companion object {
         // Definición del área de juego - ajustados para permitir un click más
@@ -45,6 +46,11 @@ class GameViewModel : ViewModel() {
     val gameTimer: StateFlow<Long> = _gameTimer.asStateFlow()
 
     private var timerJob: Job? = null
+
+    // Init aquí
+    init {
+        soundManager.startBackgroundMusic()
+    }
 
     // Función para establecer el personaje seleccionado
     fun setSelectedCharacter(character: GameCharacter) {
@@ -124,14 +130,14 @@ class GameViewModel : ViewModel() {
     fun updatePlayerPosition(newPosition: Position) {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && !currentState.isPaused) {
-            // Validar los límites con los nuevos valores
+            soundManager.playPlayerSound() // Añadir sonido de movimiento
             val validX = newPosition.x.coerceIn(
                 GAME_AREA_LEFT,
-                GAME_AREA_RIGHT - PLAYER_SIZE  // Ajustado para limitar más a la derecha
+                GAME_AREA_RIGHT - PLAYER_SIZE
             )
             val validY = newPosition.y.coerceIn(
                 GAME_AREA_TOP,
-                GAME_AREA_BOTTOM - PLAYER_SIZE // Ajustado para limitar más abajo
+                GAME_AREA_BOTTOM - PLAYER_SIZE
             )
 
             _gameState.value = currentState.copy(
@@ -150,10 +156,12 @@ class GameViewModel : ViewModel() {
         )
 
         if (distance < 30f) {
+            soundManager.playCoinSound() // Añadir sonido de moneda
             val newCoinsCollected = currentState.coinsCollected + 1
             val newScore = currentState.score + 10
 
             if (newCoinsCollected >= 10) {
+                soundManager.playLevelCompletedSound() // Añadir sonido de nivel completado
                 completeLevelAndCalculateStars(currentState.level, newScore)
             } else {
                 _gameState.value = currentState.copy(
@@ -202,7 +210,8 @@ class GameViewModel : ViewModel() {
     fun pauseGame() {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && !currentState.isPaused) {
-            timerJob?.cancel()  // Pausar el timer
+            timerJob?.cancel()
+            soundManager.pauseBackgroundMusic() // Pausar música
             _gameState.value = currentState.copy(isPaused = true)
         }
     }
@@ -210,7 +219,8 @@ class GameViewModel : ViewModel() {
     fun resumeGame() {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && currentState.isPaused) {
-            startTimer()  // Reiniciar el timer
+            startTimer()
+            soundManager.resumeBackgroundMusic() // Reanudar música
             _gameState.value = currentState.copy(isPaused = false)
         }
     }
@@ -263,5 +273,22 @@ class GameViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+        soundManager.release() // Liberar recursos de sonido
+    }
+
+    fun toggleSound(enabled: Boolean) {
+        soundManager.toggleSound(enabled)
+    }
+
+    fun toggleMusic(enabled: Boolean) {
+        soundManager.toggleMusic(enabled)
+    }
+
+    fun setSoundVolume(volume: Float) {
+        soundManager.setSoundVolume(volume)
+    }
+
+    fun setMusicVolume(volume: Float) {
+        soundManager.setMusicVolume(volume)
     }
 }

@@ -17,13 +17,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.R
 import androidx.activity.compose.BackHandler
+import com.ucsur.coinquest.utils.SoundManager
 
 @Composable
 fun MenuScreen(
-    onNavigateToGame: () -> Unit = {},
-    onNavigateToScores: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
-    onNavigateToCredits: () -> Unit = {}
+    onNavigateToGame: () -> Unit,
+    onNavigateToScores: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToCredits: () -> Unit,
+    soundManager: SoundManager  // Añadir este parámetro
 ) {
     var selectedButton by remember { mutableStateOf<String?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -85,6 +87,7 @@ fun MenuScreen(
                     text = "Jugar",
                     isSelected = selectedButton == "jugar",
                     onClick = {
+                        soundManager.playButtonSound()  // Añadir sonido
                         selectedButton = "jugar"
                         onNavigateToGame()
                     }
@@ -94,6 +97,7 @@ fun MenuScreen(
                     text = "Puntajes",
                     isSelected = selectedButton == "puntajes",
                     onClick = {
+                        soundManager.playButtonSound()
                         selectedButton = "puntajes"
                         onNavigateToScores()
                     }
@@ -103,6 +107,7 @@ fun MenuScreen(
                     text = "Ajustes",
                     isSelected = selectedButton == "ajustes",
                     onClick = {
+                        soundManager.playButtonSound()
                         selectedButton = "ajustes"
                         onNavigateToSettings()
                     }
@@ -112,6 +117,7 @@ fun MenuScreen(
                     text = "Créditos",
                     isSelected = selectedButton == "creditos",
                     onClick = {
+                        soundManager.playButtonSound()
                         selectedButton = "creditos"
                         onNavigateToCredits()
                     }

@@ -39,13 +39,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
+import com.ucsur.coinquest.utils.SoundManager
 
 
 @Composable
 fun GameScreen(
     viewModel: GameViewModel = viewModel(),
     onNavigateToCharacterSelect: () -> Unit,
-    onNavigateToMenu: () -> Unit
+    onNavigateToMenu: () -> Unit,
+    soundManager: SoundManager
 ) {
     val gameState by viewModel.gameState.collectAsState()
     val selectedCharacter by viewModel.selectedCharacter.collectAsState()
@@ -79,7 +81,8 @@ fun GameScreen(
                 if (selectedCharacter != null) {
                     StartGameScreen(
                         characterName = selectedCharacter?.customName ?: selectedCharacter?.defaultName ?: "",
-                        onStartGame = { viewModel.startGame() }
+                        onStartGame = { viewModel.startGame() },
+                        soundManager = soundManager  // Pasar el soundManager
                     )
                 }
             }
@@ -92,7 +95,8 @@ fun GameScreen(
                     onMove = viewModel::updatePlayerPosition,
                     onPause = viewModel::pauseGame,
                     onResume = viewModel::resumeGame,
-                    onExit = viewModel::requestExit
+                    onExit = viewModel::requestExit,
+                    soundManager = soundManager  // Pasar el soundManager
                 )
             }
 
@@ -117,7 +121,8 @@ fun GameScreen(
                         },
                         onDismiss = {
                             viewModel.cancelExit()
-                        }
+                        },
+                        soundManager = soundManager  // Pasar el soundManager
                     )
                 }
             }
@@ -128,7 +133,8 @@ fun GameScreen(
 @Composable
 private fun StartGameScreen(
     characterName: String,
-    onStartGame: () -> Unit
+    onStartGame: () -> Unit,
+    soundManager: SoundManager  // Añadir este parámetro
 ) {
     Column(
         modifier = Modifier
@@ -146,7 +152,10 @@ private fun StartGameScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = onStartGame,
+            onClick = {
+                soundManager.playButtonSound()  // Añadir sonido
+                onStartGame()
+            },
             modifier = Modifier
                 .width(200.dp)
                 .height(56.dp)
@@ -164,100 +173,162 @@ private fun GamePlayScreen(
     onMove: (Position) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
-    onExit: () -> Unit
+    onExit: () -> Unit,
+    soundManager: SoundManager
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 16.dp) // Añadimos padding superior
-    ) {
-        GameHUD(
-            level = state.level,
-            score = state.score,
-            coins = state.coinsCollected,
-            timeElapsed = timeElapsed,
-            onPause = onPause,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        // Área de juego
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {  // Contenedor principal Box
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(16.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                    RoundedCornerShape(16.dp)
-                )
+                .fillMaxSize()
+                .padding(top = 16.dp)
         ) {
-            // Cuadrícula
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val gridSize = 50f
+            GameHUD(
+                level = state.level,
+                score = state.score,
+                coins = state.coinsCollected,
+                timeElapsed = timeElapsed,
+                onPause = onPause,
+                soundManager = soundManager,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
 
-                // Dibujar líneas verticales
-                for (x in 0..size.width.toInt() step gridSize.toInt()) {
-                    drawLine(
-                        Color.Gray.copy(alpha = 0.3f),
-                        start = Offset(x.toFloat(), 0f),
-                        end = Offset(x.toFloat(), size.height),
-                        strokeWidth = 1f
-                    )
-                }
-
-                // Dibujar líneas horizontales
-                for (y in 0..size.height.toInt() step gridSize.toInt()) {
-                    drawLine(
-                        Color.Gray.copy(alpha = 0.3f),
-                        start = Offset(0f, y.toFloat()),
-                        end = Offset(size.width, y.toFloat()),
-                        strokeWidth = 1f
-                    )
-                }
-            }
-
-            // Personaje y moneda
+            // Área de juego
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
+                        RoundedCornerShape(16.dp)
+                    )
             ) {
-                // Personaje
-                Image(
-                    painter = painterResource(id = characterImageRes),
-                    contentDescription = "Player Character",
-                    modifier = Modifier
-                        .size(GameViewModel.PLAYER_SIZE.dp)
-                        .offset(
-                            x = state.playerPosition.x.dp,
-                            y = state.playerPosition.y.dp
-                        )
-                )
+                // Cuadrícula
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val gridSize = 50f
 
-                // Moneda
-                Image(
-                    painter = painterResource(id = R.drawable.coin),
-                    contentDescription = "Coin",
-                    modifier = Modifier
-                        .size(GameViewModel.COIN_SIZE.dp)
-                        .offset(
-                            x = state.currentCoinPosition.x.dp,
-                            y = state.currentCoinPosition.y.dp
+                    // Dibujar líneas verticales
+                    for (x in 0..size.width.toInt() step gridSize.toInt()) {
+                        drawLine(
+                            Color.Gray.copy(alpha = 0.3f),
+                            start = Offset(x.toFloat(), 0f),
+                            end = Offset(x.toFloat(), size.height),
+                            strokeWidth = 1f
                         )
-                )
+                    }
+
+                    // Dibujar líneas horizontales
+                    for (y in 0..size.height.toInt() step gridSize.toInt()) {
+                        drawLine(
+                            Color.Gray.copy(alpha = 0.3f),
+                            start = Offset(0f, y.toFloat()),
+                            end = Offset(size.width, y.toFloat()),
+                            strokeWidth = 1f
+                        )
+                    }
+                }
+
+                // Personaje y moneda
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Personaje
+                    Image(
+                        painter = painterResource(id = characterImageRes),
+                        contentDescription = "Player Character",
+                        modifier = Modifier
+                            .size(GameViewModel.PLAYER_SIZE.dp)
+                            .offset(
+                                x = state.playerPosition.x.dp,
+                                y = state.playerPosition.y.dp
+                            )
+                    )
+
+                    // Moneda
+                    Image(
+                        painter = painterResource(id = R.drawable.coin),
+                        contentDescription = "Coin",
+                        modifier = Modifier
+                            .size(GameViewModel.COIN_SIZE.dp)
+                            .offset(
+                                x = state.currentCoinPosition.x.dp,
+                                y = state.currentCoinPosition.y.dp
+                            )
+                    )
+                }
             }
+
+            // Controles en la parte inferior
+            GameControls(
+                modifier = Modifier.fillMaxWidth(),
+                onMove = onMove,
+                currentPosition = state.playerPosition
+            )
         }
 
-        // Controles en la parte inferior
-        GameControls(
-            modifier = Modifier.fillMaxWidth(),
-            onMove = onMove,
-            currentPosition = state.playerPosition
-        )
-
+        // Superposición del menú de pausa
         if (state.isPaused) {
-            PauseMenu(
-                onResume = onResume,
-                onExit = onExit
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Text(
+                        text = "Juego Pausado",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = {
+                            soundManager.playButtonSound()
+                            onResume()
+                        },
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            "Continuar",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            soundManager.playButtonSound()
+                            onExit()
+                        },
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            "Salir",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -269,7 +340,8 @@ private fun GameHUD(
     coins: Int,
     timeElapsed: Long,
     onPause: () -> Unit,
-    modifier: Modifier = Modifier  // Añadir este parámetro
+    soundManager: SoundManager,  // Añadir este parámetro
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
@@ -294,7 +366,12 @@ private fun GameHUD(
             fontWeight = FontWeight.Bold
         )
 
-        IconButton(onClick = onPause) {
+        IconButton(
+            onClick = {
+                soundManager.playButtonSound()  // Añadir sonido
+                onPause()
+            }
+        ) {
             Icon(Icons.Outlined.Pause, "Pausar")
         }
     }
@@ -416,40 +493,67 @@ private fun GameControls(
 @Composable
 private fun PauseMenu(
     onResume: () -> Unit,
-    onExit: () -> Unit
+    onExit: () -> Unit,
+    soundManager: SoundManager
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+            .background(Color.Black.copy(alpha = 0.7f)), // Fondo semi-transparente
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
         ) {
             Text(
-                "Juego Pausado",
+                text = "Juego Pausado",
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White
+                color = Color.White,
+                fontWeight = FontWeight.Bold
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
             Button(
-                onClick = onResume,
+                onClick = {
+                    soundManager.playButtonSound()
+                    onResume()
+                },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(48.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                ),
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Text("Continuar")
+                Text(
+                    "Continuar",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Button(
-                onClick = onExit,
+                onClick = {
+                    soundManager.playButtonSound()
+                    onExit()
+                },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(48.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
+                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
+                ),
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Text("Salir")
+                Text(
+                    "Salir",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -518,7 +622,8 @@ private fun LevelCompletedScreen(
 @Composable
 private fun ExitConfirmationDialog(
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    soundManager: SoundManager  // Añadir este parámetro
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -526,7 +631,10 @@ private fun ExitConfirmationDialog(
         text = { Text("Perderás todo el progreso actual") },
         confirmButton = {
             Button(
-                onClick = onConfirm,
+                onClick = {
+                    soundManager.playButtonSound()  // Añadir sonido
+                    onConfirm()
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
                 )
@@ -535,7 +643,12 @@ private fun ExitConfirmationDialog(
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            Button(
+                onClick = {
+                    soundManager.playButtonSound()  // Añadir sonido
+                    onDismiss()
+                }
+            ) {
                 Text("Continuar jugando")
             }
         }
