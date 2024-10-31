@@ -32,6 +32,14 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.activity.compose.BackHandler
 import java.util.Locale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.graphicsLayer
+
 
 @Composable
 fun GameScreen(
@@ -43,15 +51,13 @@ fun GameScreen(
     val selectedCharacter by viewModel.selectedCharacter.collectAsState()
     val gameTimer by viewModel.gameTimer.collectAsState()
 
-    LaunchedEffect(selectedCharacter) {
-        if (selectedCharacter == null) {
-            onNavigateToCharacterSelect()
-        }
-    }
-
     // Manejador del botón de retroceso
-    BackHandler(enabled = true) {
+    BackHandler {
         when (gameState) {
+            is GameState.NotStarted -> {
+                // Si estamos en la pantalla de bienvenida, volvemos a la selección de personaje
+                onNavigateToCharacterSelect()
+            }
             is GameState.Playing -> {
                 // Si está jugando, mostrar menú de pausa
                 viewModel.pauseGame()
@@ -288,49 +294,119 @@ private fun GameControls(
     onMove: (Position) -> Unit,
     currentPosition: Position
 ) {
+    // Añadir esta línea al inicio de la función
+    val haptic = LocalHapticFeedback.current
+
     Column(
-        modifier = modifier.padding(bottom = 16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Botón Arriba
         IconButton(
-            onClick = { onMove(Position(currentPosition.x, currentPosition.y - 10)) },
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onMove(Position(currentPosition.x, currentPosition.y - 15))
+            },
             modifier = Modifier
+                .size(80.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    CircleShape
+                )
+                .padding(8.dp)
+                .pressedAlpha(0.7f)  // Efecto de presión
         ) {
-            Icon(Icons.Filled.KeyboardArrowUp, "Arriba")
+            Icon(
+                Icons.Filled.KeyboardArrowUp,
+                "Arriba",
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(32.dp),
+            horizontalArrangement = Arrangement.spacedBy(48.dp),
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
+            // Botón Izquierda
             IconButton(
-                onClick = { onMove(Position(currentPosition.x - 10, currentPosition.y)) },
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onMove(Position(currentPosition.x - 15, currentPosition.y))
+                },
                 modifier = Modifier
+                    .size(80.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                        CircleShape
+                    )
+                    .padding(8.dp)
+                    .pressedAlpha(0.7f)  // Efecto de presión
             ) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Izquierda")
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    "Izquierda",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
 
+            // Botón Derecha
             IconButton(
-                onClick = { onMove(Position(currentPosition.x + 10, currentPosition.y)) },
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onMove(Position(currentPosition.x + 15, currentPosition.y))
+                },
                 modifier = Modifier
+                    .size(80.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                        CircleShape
+                    )
+                    .padding(8.dp)
+                    .pressedAlpha(0.7f)  // Efecto de presión
             ) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Derecha")
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    "Derecha",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Botón Abajo
         IconButton(
-            onClick = { onMove(Position(currentPosition.x, currentPosition.y + 10)) },
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onMove(Position(currentPosition.x, currentPosition.y + 15))
+            },
             modifier = Modifier
+                .size(80.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    CircleShape
+                )
+                .padding(8.dp)
+                .pressedAlpha(0.7f)  // Efecto de presión
         ) {
-            Icon(Icons.Filled.KeyboardArrowDown, "Abajo")
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                "Abajo",
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }
@@ -468,4 +544,16 @@ private fun formatTime(timeInMillis: Long): String {
     val seconds = (timeInMillis / 1000) % 60
     val minutes = (timeInMillis / (1000 * 60)) % 60
     return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+}
+
+// Añadir esta función de extensión al final del archivo
+private fun Modifier.pressedAlpha(alpha: Float): Modifier = composed {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    graphicsLayer(alpha = if (isPressed) alpha else 1f)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null
+        ) { }
 }

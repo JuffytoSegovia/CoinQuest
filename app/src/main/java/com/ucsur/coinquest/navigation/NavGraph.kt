@@ -22,8 +22,7 @@ sealed class Screen(val route: String) {
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    viewModel: GameViewModel = viewModel(),
-    onExitApp: () -> Unit = {} // Añadir este parámetro
+    viewModel: GameViewModel = viewModel()
 ) {
     NavHost(
         navController = navController,
@@ -60,7 +59,9 @@ fun NavGraph(
                 onNavigateToMenu = {
                     navController.navigate(Screen.Menu.route) {
                         // Limpiamos el back stack hasta el menú
-                        popUpTo(Screen.Menu.route) { inclusive = true }
+                        popUpTo(Screen.Menu.route) {
+                            inclusive = true
+                        }
                     }
                 }
             )
@@ -68,12 +69,37 @@ fun NavGraph(
 
         composable(Screen.Characters.route) {
             CharactersScreen(
-                onNavigateBack = { navController.navigateUp() },
+                onNavigateBack = {
+                    // Al dar atrás en selección de personaje, volvemos al menú
+                    navController.navigate(Screen.Menu.route) {
+                        popUpTo(Screen.Menu.route) {
+                            inclusive = true
+                        }
+                    }
+                },
                 onCharacterSelected = { character ->
                     viewModel.setSelectedCharacter(character)
-                    navController.navigate(Screen.Game.route) {
-                        // Limpiamos el back stack hasta el menú
-                        popUpTo(Screen.Menu.route)
+                    navController.navigate(Screen.Game.route)
+                }
+            )
+        }
+
+        composable(Screen.Game.route) {
+            GameScreen(
+                viewModel = viewModel,
+                onNavigateToCharacterSelect = {
+                    // Al dar atrás en la pantalla de bienvenida, volvemos a la selección de personaje
+                    navController.navigate(Screen.Characters.route) {
+                        popUpTo(Screen.Characters.route) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onNavigateToMenu = {
+                    navController.navigate(Screen.Menu.route) {
+                        popUpTo(Screen.Menu.route) {
+                            inclusive = true
+                        }
                     }
                 }
             )
