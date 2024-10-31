@@ -9,9 +9,26 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.random.Random
 
 
 class GameViewModel : ViewModel() {
+
+    companion object {
+        // Definición del área de juego - ajustados para el recuadro azul
+        const val GAME_AREA_TOP = 20f     // Un poco más abajo del HUD
+        const val GAME_AREA_BOTTOM = 400f  // Justo antes de los controles
+        const val GAME_AREA_LEFT = 20f     // Margen izquierdo
+        const val GAME_AREA_RIGHT = 320f   // Margen derecho
+
+        // Tamaños de elementos
+        const val PLAYER_SIZE = 40f
+        const val COIN_SIZE = 30f
+
+        // Paso de movimiento
+        const val MOVEMENT_STEP = 15f
+    }
+
     // Estado del personaje seleccionado
     private val _selectedCharacter = MutableStateFlow<GameCharacter?>(null)
     val selectedCharacter: StateFlow<GameCharacter?> = _selectedCharacter.asStateFlow()
@@ -52,7 +69,10 @@ class GameViewModel : ViewModel() {
                 level = 1,
                 score = 0,
                 coinsCollected = 0,
-                playerPosition = Position(150f, 150f),
+                playerPosition = Position(
+                    x = (GAME_AREA_LEFT + GAME_AREA_RIGHT - PLAYER_SIZE) / 2, // Centro X
+                    y = (GAME_AREA_TOP + GAME_AREA_BOTTOM - PLAYER_SIZE) / 2  // Centro Y
+                ),
                 currentCoinPosition = generateRandomCoinPosition(),
                 isPaused = false,
                 timeElapsed = 0L
@@ -90,9 +110,12 @@ class GameViewModel : ViewModel() {
 
     // Función para generar una posición aleatoria para la moneda
     private fun generateRandomCoinPosition(): Position {
+        val safeAreaWidth = GAME_AREA_RIGHT - GAME_AREA_LEFT - COIN_SIZE
+        val safeAreaHeight = GAME_AREA_BOTTOM - GAME_AREA_TOP - COIN_SIZE
+
         return Position(
-            x = (50..300).random().toFloat(),
-            y = (50..300).random().toFloat()
+            x = GAME_AREA_LEFT + (Math.random() * safeAreaWidth).toFloat(),
+            y = GAME_AREA_TOP + (Math.random() * safeAreaHeight).toFloat()
         )
     }
 
@@ -100,8 +123,15 @@ class GameViewModel : ViewModel() {
     fun updatePlayerPosition(newPosition: Position) {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && !currentState.isPaused) {
-            val validX = newPosition.x.coerceIn(0f, 320f)
-            val validY = newPosition.y.coerceIn(0f, 320f)
+            // Validar los límites considerando el tamaño del jugador
+            val validX = newPosition.x.coerceIn(
+                GAME_AREA_LEFT,
+                GAME_AREA_RIGHT - PLAYER_SIZE
+            )
+            val validY = newPosition.y.coerceIn(
+                GAME_AREA_TOP,
+                GAME_AREA_BOTTOM - PLAYER_SIZE
+            )
 
             _gameState.value = currentState.copy(
                 playerPosition = Position(validX, validY)

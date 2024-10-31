@@ -22,7 +22,8 @@ sealed class Screen(val route: String) {
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    viewModel: GameViewModel = viewModel()
+    viewModel: GameViewModel = viewModel(),
+    onExitApp: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,

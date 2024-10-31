@@ -166,78 +166,89 @@ private fun GamePlayScreen(
     onResume: () -> Unit,
     onExit: () -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(top = 16.dp) // Añadimos padding superior
     ) {
-        // Cuadrícula de juego
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val gridSize = 50f
-            val width = size.width
-            val height = size.height
+        GameHUD(
+            level = state.level,
+            score = state.score,
+            coins = state.coinsCollected,
+            timeElapsed = timeElapsed,
+            onPause = onPause,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
 
-            for (x in 0..width.toInt() step gridSize.toInt()) {
-                drawLine(
-                    Color.Gray.copy(alpha = 0.3f),
-                    start = Offset(x.toFloat(), 0f),
-                    end = Offset(x.toFloat(), height),
-                    strokeWidth = 1f
+        // Área de juego
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(16.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
+                    RoundedCornerShape(16.dp)
                 )
+        )  {
+            // Cuadrícula
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val gridSize = 50f
+
+                // Dibujar líneas verticales
+                for (x in 0..size.width.toInt() step gridSize.toInt()) {
+                    drawLine(
+                        Color.Gray.copy(alpha = 0.3f),
+                        start = Offset(x.toFloat(), 0f),
+                        end = Offset(x.toFloat(), size.height),
+                        strokeWidth = 1f
+                    )
+                }
+
+                // Dibujar líneas horizontales
+                for (y in 0..size.height.toInt() step gridSize.toInt()) {
+                    drawLine(
+                        Color.Gray.copy(alpha = 0.3f),
+                        start = Offset(0f, y.toFloat()),
+                        end = Offset(size.width, y.toFloat()),
+                        strokeWidth = 1f
+                    )
+                }
             }
 
-            for (y in 0..height.toInt() step gridSize.toInt()) {
-                drawLine(
-                    Color.Gray.copy(alpha = 0.3f),
-                    start = Offset(0f, y.toFloat()),
-                    end = Offset(width, y.toFloat()),
-                    strokeWidth = 1f
+            // Personaje y moneda
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Personaje
+                Image(
+                    painter = painterResource(id = characterImageRes),
+                    contentDescription = "Player Character",
+                    modifier = Modifier
+                        .size(GameViewModel.PLAYER_SIZE.dp)
+                        .offset(
+                            x = state.playerPosition.x.dp,
+                            y = state.playerPosition.y.dp
+                        )
+                )
+
+                // Moneda
+                Image(
+                    painter = painterResource(id = R.drawable.coin),
+                    contentDescription = "Coin",
+                    modifier = Modifier
+                        .size(GameViewModel.COIN_SIZE.dp)
+                        .offset(
+                            x = state.currentCoinPosition.x.dp,
+                            y = state.currentCoinPosition.y.dp
+                        )
                 )
             }
         }
 
-        // HUD
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(8.dp)
-        ) {
-            GameHUD(
-                level = state.level,
-                score = state.score,
-                coins = state.coinsCollected,
-                timeElapsed = timeElapsed,
-                onPause = onPause
-            )
-        }
-
-        // Personaje
-        Image(
-            painter = painterResource(id = characterImageRes),
-            contentDescription = "Player Character",
-            modifier = Modifier
-                .size(40.dp)
-                .offset(
-                    x = state.playerPosition.x.dp,
-                    y = state.playerPosition.y.dp
-                )
-        )
-
-        // Moneda actual
-        Image(
-            painter = painterResource(id = R.drawable.coin),
-            contentDescription = "Coin",
-            modifier = Modifier
-                .size(30.dp)
-                .offset(
-                    x = state.currentCoinPosition.x.dp,
-                    y = state.currentCoinPosition.y.dp
-                )
-        )
-
-        // Controles
+        // Controles en la parte inferior
         GameControls(
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.fillMaxWidth(),
             onMove = onMove,
             currentPosition = state.playerPosition
         )
@@ -257,10 +268,11 @@ private fun GameHUD(
     score: Int,
     coins: Int,
     timeElapsed: Long,
-    onPause: () -> Unit
+    onPause: () -> Unit,
+    modifier: Modifier = Modifier  // Añadir este parámetro
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
@@ -269,7 +281,7 @@ private fun GameHUD(
             .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
-    ) {
+    )  {
         Column {
             Text("Nivel: $level")
             Text("Puntuación: $score")
@@ -294,119 +306,109 @@ private fun GameControls(
     onMove: (Position) -> Unit,
     currentPosition: Position
 ) {
-    // Añadir esta línea al inicio de la función
     val haptic = LocalHapticFeedback.current
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .height(220.dp)  // Altura fija para el área de controles
+            .padding(16.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(16.dp)
+            )
     ) {
-        // Botón Arriba
-        IconButton(
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onMove(Position(currentPosition.x, currentPosition.y - 15))
-            },
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                    CircleShape
-                )
-                .padding(8.dp)
-                .pressedAlpha(0.7f)  // Efecto de presión
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                Icons.Filled.KeyboardArrowUp,
-                "Arriba",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(48.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 8.dp)
-        ) {
-            // Botón Izquierda
+            // Botón Arriba
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onMove(Position(currentPosition.x - 15, currentPosition.y))
+                    onMove(Position(currentPosition.x, currentPosition.y - GameViewModel.MOVEMENT_STEP))
                 },
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(60.dp)
                     .clip(CircleShape)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                        CircleShape
-                    )
-                    .padding(8.dp)
-                    .pressedAlpha(0.7f)  // Efecto de presión
+                    .background(MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    "Izquierda",
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    Icons.Filled.KeyboardArrowUp,
+                    "Arriba",
+                    modifier = Modifier.size(36.dp),
+                    tint = Color.White
                 )
             }
 
-            // Botón Derecha
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Fila de botones izquierda y derecha
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(100.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                // Botón Izquierda
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onMove(Position(currentPosition.x - GameViewModel.MOVEMENT_STEP, currentPosition.y))
+                    },
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        "Izquierda",
+                        modifier = Modifier.size(36.dp),
+                        tint = Color.White
+                    )
+                }
+
+                // Botón Derecha
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onMove(Position(currentPosition.x + GameViewModel.MOVEMENT_STEP, currentPosition.y))
+                    },
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        "Derecha",
+                        modifier = Modifier.size(36.dp),
+                        tint = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Botón Abajo
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onMove(Position(currentPosition.x + 15, currentPosition.y))
+                    onMove(Position(currentPosition.x, currentPosition.y + GameViewModel.MOVEMENT_STEP))
                 },
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(60.dp)
                     .clip(CircleShape)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                        CircleShape
-                    )
-                    .padding(8.dp)
-                    .pressedAlpha(0.7f)  // Efecto de presión
+                    .background(MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    "Derecha",
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    Icons.Filled.KeyboardArrowDown,
+                    "Abajo",
+                    modifier = Modifier.size(36.dp),
+                    tint = Color.White
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Botón Abajo
-        IconButton(
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onMove(Position(currentPosition.x, currentPosition.y + 15))
-            },
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                    CircleShape
-                )
-                .padding(8.dp)
-                .pressedAlpha(0.7f)  // Efecto de presión
-        ) {
-            Icon(
-                Icons.Filled.KeyboardArrowDown,
-                "Abajo",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
         }
     }
 }
