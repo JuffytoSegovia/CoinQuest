@@ -72,4 +72,5 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.material.icons.extended)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 }
