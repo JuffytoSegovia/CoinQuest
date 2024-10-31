@@ -5,10 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.ucsur.coinquest.data.SettingsDataStore
 import com.ucsur.coinquest.model.Settings
 import com.ucsur.coinquest.utils.SoundManager
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class SettingsViewModel(
     private val soundManager: SoundManager,
@@ -21,6 +20,8 @@ class SettingsViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = Settings()
         )
+
+    private val _savingState = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -61,6 +62,15 @@ class SettingsViewModel(
         viewModelScope.launch {
             settingsDataStore.updateMusicVolume(volume)
             soundManager.setMusicVolume(volume)
+        }
+    }
+
+    fun saveSettings() {
+        viewModelScope.launch {
+            _savingState.value = true
+            // Aquí podrías agregar lógica adicional de guardado si es necesario
+            delay(500) // Simular tiempo de guardado
+            _savingState.value = false
         }
     }
 }

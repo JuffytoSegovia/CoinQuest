@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.ucsur.coinquest.viewmodel.SettingsViewModel
 import com.ucsur.coinquest.model.Settings
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -17,40 +18,93 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val settings by viewModel.settings.collectAsState()
+    val scope = rememberCoroutineScope()
+    var hasChanges by remember { mutableStateOf(false) }
+    var showSaveConfirmation by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        SettingsTopBar(onNavigateBack)
-        Spacer(modifier = Modifier.height(32.dp))
-        SoundSettings(settings, viewModel)
-    }
-}
-
-@Composable
-private fun SettingsTopBar(onNavigateBack: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onNavigateBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+        // Barra superior con botón de retroceso
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = {
+                if (hasChanges) {
+                    showSaveConfirmation = true
+                } else {
+                    onNavigateBack()
+                }
+            }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+            }
+            Text(
+                text = "Ajustes",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Spacer(modifier = Modifier.width(48.dp))
         }
-        Text(
-            text = "Ajustes",
-            style = MaterialTheme.typography.headlineMedium
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Ajustes de Sonido
+        SoundSettings(
+            settings = settings,
+            viewModel = viewModel,
+            onSettingsChanged = { hasChanges = true }
         )
-        Spacer(modifier = Modifier.width(48.dp))
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Botón Guardar
+        Button(
+            onClick = {
+                scope.launch {
+                    viewModel.saveSettings()
+                    hasChanges = false
+                    showSaveConfirmation = true
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            enabled = hasChanges
+        ) {
+            Text("Guardar Cambios")
+        }
+
+        // Diálogo de confirmación de guardado
+        if (showSaveConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showSaveConfirmation = false },
+                title = { Text("Ajustes Guardados") },
+                text = { Text("Los cambios se han guardado correctamente.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showSaveConfirmation = false
+                            if (!hasChanges) {
+                                onNavigateBack()
+                            }
+                        }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
     }
 }
 
 @Composable
 private fun SoundSettings(
     settings: Settings,
-    viewModel: SettingsViewModel
+    viewModel: SettingsViewModel,
+    onSettingsChanged: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -66,75 +120,67 @@ private fun SoundSettings(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Efectos de sonido
-            SoundToggleRow(
-                title = "Efectos de sonido",
-                isEnabled = settings.isSoundEnabled,
-                onToggle = viewModel::toggleSound
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Efectos de sonido")
+                Switch(
+                    checked = settings.isSoundEnabled,
+                    onCheckedChange = {
+                        viewModel.toggleSound(it)  // Cambiado de updateSound a toggleSound
+                        onSettingsChanged()
+                    }
+                )
+            }
 
             if (settings.isSoundEnabled) {
-                VolumeSlider(
-                    title = "Volumen de efectos",
-                    volume = settings.soundVolume,
-                    onVolumeChange = viewModel::updateSoundVolume,
-                    isEnabled = settings.isSoundEnabled
+                Text(
+                    text = "Volumen de efectos",
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Slider(
+                    value = settings.soundVolume,
+                    onValueChange = {
+                        viewModel.updateSoundVolume(it)
+                        onSettingsChanged()
+                    },
+                    enabled = settings.isSoundEnabled
                 )
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Música de fondo
-            SoundToggleRow(
-                title = "Música de fondo",
-                isEnabled = settings.isMusicEnabled,
-                onToggle = viewModel::toggleMusic
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Música de fondo")
+                Switch(
+                    checked = settings.isMusicEnabled,
+                    onCheckedChange = {
+                        viewModel.toggleMusic(it)  // Cambiado de updateMusic a toggleMusic
+                        onSettingsChanged()
+                    }
+                )
+            }
 
             if (settings.isMusicEnabled) {
-                VolumeSlider(
-                    title = "Volumen de música",
-                    volume = settings.musicVolume,
-                    onVolumeChange = viewModel::updateMusicVolume,
-                    isEnabled = settings.isMusicEnabled
+                Text(
+                    text = "Volumen de música",
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Slider(
+                    value = settings.musicVolume,
+                    onValueChange = {
+                        viewModel.updateMusicVolume(it)
+                        onSettingsChanged()
+                    },
+                    enabled = settings.isMusicEnabled
                 )
             }
         }
     }
-}
-
-@Composable
-private fun SoundToggleRow(
-    title: String,
-    isEnabled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(title)
-        Switch(
-            checked = isEnabled,
-            onCheckedChange = onToggle
-        )
-    }
-}
-
-@Composable
-private fun VolumeSlider(
-    title: String,
-    volume: Float,
-    onVolumeChange: (Float) -> Unit,
-    isEnabled: Boolean
-) {
-    Text(
-        text = title,
-        modifier = Modifier.padding(top = 8.dp)
-    )
-    Slider(
-        value = volume,
-        onValueChange = onVolumeChange,
-        enabled = isEnabled
-    )
 }

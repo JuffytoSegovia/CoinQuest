@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.ucsur.coinquest.ui.theme
 
 import android.app.Activity
