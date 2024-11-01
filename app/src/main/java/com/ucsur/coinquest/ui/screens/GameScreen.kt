@@ -39,6 +39,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.ucsur.coinquest.model.LevelConfigurations
 import com.ucsur.coinquest.utils.SoundManager
 
+// Función para formatear el tiempo - fuera de las composables
+private fun formatTime(timeInMillis: Long): String {
+    val seconds = (timeInMillis / 1000) % 60
+    val minutes = (timeInMillis / (1000 * 60)) % 60
+    return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+}
 
 @Composable
 fun GameScreen(
@@ -51,36 +57,27 @@ fun GameScreen(
     val selectedCharacter by viewModel.selectedCharacter.collectAsState()
     val gameTimer by viewModel.gameTimer.collectAsState()
 
-    // Manejador del botón de retroceso
     BackHandler {
         when (gameState) {
-            is GameState.NotStarted -> {
-                // Si estamos en la pantalla de bienvenida, volvemos a la selección de personaje
-                onNavigateToCharacterSelect()
-            }
-            is GameState.Playing -> {
-                // Si está jugando, mostrar menú de pausa
-                viewModel.pauseGame()
-            }
-            is GameState.ExitConfirmation -> {
-                // Si está en el diálogo de confirmación, cancelar
-                viewModel.cancelExit()
-            }
-            else -> {
-                // En otros estados, navegar al menú
-                onNavigateToMenu()
-            }
+            is GameState.NotStarted -> onNavigateToCharacterSelect()
+            is GameState.Playing -> viewModel.pauseGame()
+            is GameState.ExitConfirmation -> viewModel.cancelExit()
+            is GameState.LevelCompleted -> {} // No hacer nada, se maneja en LevelCompletedScreen
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+    ) {
         when (val currentState = gameState) {
             is GameState.NotStarted -> {
                 if (selectedCharacter != null) {
                     StartGameScreen(
                         characterName = selectedCharacter?.customName ?: selectedCharacter?.defaultName ?: "",
                         onStartGame = { viewModel.startGame() },
-                        soundManager = soundManager  // Pasar el soundManager
+                        soundManager = soundManager
                     )
                 }
             }
@@ -94,7 +91,7 @@ fun GameScreen(
                     onPause = viewModel::pauseGame,
                     onResume = viewModel::resumeGame,
                     onExit = viewModel::requestExit,
-                    soundManager = soundManager  // Pasar el soundManager
+                    soundManager = soundManager
                 )
             }
 
@@ -102,7 +99,9 @@ fun GameScreen(
                 LevelCompletedScreen(
                     state = currentState,
                     onBackToMenu = onNavigateToMenu,
-                    onRestartGame = viewModel::restartGame
+                    onRestartGame = viewModel::restartGame,
+                    onNextLevel = viewModel::startNextLevel,
+                    soundManager = soundManager
                 )
             }
 
@@ -120,7 +119,7 @@ fun GameScreen(
                         onDismiss = {
                             viewModel.cancelExit()
                         },
-                        soundManager = soundManager  // Pasar el soundManager
+                        soundManager = soundManager
                     )
                 }
             }
@@ -132,33 +131,39 @@ fun GameScreen(
 private fun StartGameScreen(
     characterName: String,
     onStartGame: () -> Unit,
-    soundManager: SoundManager  // Añadir este parámetro
+    soundManager: SoundManager
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .systemBarsPadding()
     ) {
-        Text(
-            text = "¡Bienvenido, $characterName!",
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = {
-                soundManager.playButtonSound()  // Añadir sonido
-                onStartGame()
-            },
+        Column(
             modifier = Modifier
-                .width(200.dp)
-                .height(56.dp)
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text("Comenzar Nivel 1")
+            Text(
+                text = "¡Bienvenido, $characterName!",
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    soundManager.playButtonSound()
+                    onStartGame()
+                },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(56.dp)
+            ) {
+                Text("Comenzar Nivel 1")
+            }
         }
     }
 }
@@ -174,7 +179,11 @@ private fun GamePlayScreen(
     onExit: () -> Unit,
     soundManager: SoundManager
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {  // Contenedor principal Box
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -190,7 +199,6 @@ private fun GamePlayScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            // Área de juego
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -201,11 +209,8 @@ private fun GamePlayScreen(
                         RoundedCornerShape(16.dp)
                     )
             ) {
-                // Cuadrícula
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val gridSize = 50f
-
-                    // Dibujar líneas verticales
                     for (x in 0..size.width.toInt() step gridSize.toInt()) {
                         drawLine(
                             Color.Gray.copy(alpha = 0.3f),
@@ -214,8 +219,6 @@ private fun GamePlayScreen(
                             strokeWidth = 1f
                         )
                     }
-
-                    // Dibujar líneas horizontales
                     for (y in 0..size.height.toInt() step gridSize.toInt()) {
                         drawLine(
                             Color.Gray.copy(alpha = 0.3f),
@@ -226,11 +229,7 @@ private fun GamePlayScreen(
                     }
                 }
 
-                // Personaje y moneda
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Personaje
+                Box(modifier = Modifier.fillMaxSize()) {
                     Image(
                         painter = painterResource(id = characterImageRes),
                         contentDescription = "Player Character",
@@ -242,7 +241,6 @@ private fun GamePlayScreen(
                             )
                     )
 
-                    // Moneda
                     Image(
                         painter = painterResource(id = R.drawable.coin),
                         contentDescription = "Coin",
@@ -256,7 +254,6 @@ private fun GamePlayScreen(
                 }
             }
 
-            // Controles en la parte inferior
             GameControls(
                 modifier = Modifier.fillMaxWidth(),
                 onMove = onMove,
@@ -264,69 +261,12 @@ private fun GamePlayScreen(
             )
         }
 
-        // Superposición del menú de pausa
         if (state.isPaused) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(32.dp)
-                ) {
-                    Text(
-                        text = "Juego Pausado",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = {
-                            soundManager.playButtonSound()
-                            onResume()
-                        },
-                        modifier = Modifier
-                            .width(200.dp)
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
-                        ),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text(
-                            "Continuar",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            soundManager.playButtonSound()
-                            onExit()
-                        },
-                        modifier = Modifier
-                            .width(200.dp)
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
-                        ),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text(
-                            "Salir",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+            PauseOverlay(
+                onResume = onResume,
+                onExit = onExit,
+                soundManager = soundManager
+            )
         }
     }
 }
@@ -358,7 +298,10 @@ private fun GameHUD(
         Column {
             Text("Nivel: $level")
             Text("Puntuación: $score")
-            Text("Monedas: $coins/${levelConfig.requiredCoins}")
+            Text(
+                text = "Monedas: $coins/${levelConfig.requiredCoins}",
+                color = if (coins >= levelConfig.requiredCoins) MaterialTheme.colorScheme.primary else Color.Unspecified
+            )
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -368,7 +311,7 @@ private fun GameHUD(
                 fontWeight = FontWeight.Bold,
                 color = when {
                     timeRemaining <= 10000 -> Color.Red
-                    timeRemaining <= 20000 -> Color(0xFFFF9800) // Naranja
+                    timeRemaining <= 20000 -> Color(0xFFFF9800)
                     else -> MaterialTheme.colorScheme.onSurface
                 }
             )
@@ -405,7 +348,7 @@ private fun GameControls(
     ) {
         Box(
             modifier = Modifier
-                .requiredSize(60.dp) // Fuerza un tamaño exacto
+                .requiredSize(60.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary)
                 .clickable {
@@ -438,7 +381,6 @@ private fun GameControls(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Botón Arriba
             DirectionalButton(
                 onClick = { onMove(Position(currentPosition.x, currentPosition.y - GameViewModel.MOVEMENT_STEP)) },
                 icon = Icons.Filled.KeyboardArrowUp,
@@ -447,7 +389,6 @@ private fun GameControls(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Fila de botones izquierda y derecha
             Row(
                 horizontalArrangement = Arrangement.spacedBy(100.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -468,7 +409,6 @@ private fun GameControls(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Botón Abajo
             DirectionalButton(
                 onClick = { onMove(Position(currentPosition.x, currentPosition.y + GameViewModel.MOVEMENT_STEP)) },
                 icon = Icons.Filled.KeyboardArrowDown,
@@ -479,60 +419,224 @@ private fun GameControls(
 }
 
 @Composable
-private fun LevelCompletedScreen(
-    state: GameState.LevelCompleted,
-    onBackToMenu: () -> Unit,
-    onRestartGame: () -> Unit
+private fun PauseOverlay(
+    onResume: () -> Unit,
+    onExit: () -> Unit,
+    soundManager: SoundManager
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "¡Nivel ${state.level} Completado!",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Puntuación: ${state.finalScore}",
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        Text(
-            text = "Tiempo: ${formatTime(state.timeElapsed)}",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        // Mostrar estrellas
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
         ) {
-            repeat(3) { index ->
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Estrella",
-                    tint = if (index < state.stars) Color(0xFFFFD700) else Color.Gray
+            Text(
+                text = "Juego Pausado",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    soundManager.playButtonSound()
+                    onResume()
+                },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Text(
+                    "Continuar",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Button(
+                onClick = {
+                    soundManager.playButtonSound()
+                    onExit()
+                },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Text(
+                    "Salir",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(32.dp))
+@Composable
+private fun LevelCompletedScreen(
+    state: GameState.LevelCompleted,
+    onBackToMenu: () -> Unit,
+    onRestartGame: () -> Unit,
+    onNextLevel: () -> Unit,
+    soundManager: SoundManager
+) {
+    var showExitConfirmation by remember { mutableStateOf(false) }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+    BackHandler {
+        showExitConfirmation = true
+    }
+
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("¿Salir del juego?") },
+            text = { Text("Perderás el progreso del nivel completado") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        soundManager.playButtonSound()
+                        onBackToMenu()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Salir")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        soundManager.playButtonSound()
+                        showExitConfirmation = false
+                    }
+                ) {
+                    Text("Continuar")
+                }
+            }
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Button(onClick = onRestartGame) {
-                Text("Jugar de nuevo")
+            Text(
+                text = "¡Nivel ${state.level} Completado!",
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Puntuación: ${state.finalScore}",
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = "Tiempo: ${formatTime(state.timeElapsed)}",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(3) { index ->
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Estrella",
+                        tint = if (index < state.stars) Color(0xFFFFD700) else Color.Gray,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
 
-            Button(onClick = onBackToMenu) {
-                Text("Volver al menú")
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Botones en columna vertical
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Button(
+                    onClick = onRestartGame,
+                    modifier = Modifier
+                        .width(250.dp)
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Text(
+                        "Jugar de nuevo",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                if (state.nextLevelUnlocked && state.level < 2) {
+                    Button(
+                        onClick = onNextLevel,
+                        modifier = Modifier
+                            .width(250.dp)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(
+                            "Siguiente Nivel",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { showExitConfirmation = true },
+                    modifier = Modifier
+                        .width(250.dp)
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Text(
+                        "Volver al menú",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
@@ -542,7 +646,7 @@ private fun LevelCompletedScreen(
 private fun ExitConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    soundManager: SoundManager  // Añadir este parámetro
+    soundManager: SoundManager
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -551,7 +655,7 @@ private fun ExitConfirmationDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    soundManager.playButtonSound()  // Añadir sonido
+                    soundManager.playButtonSound()
                     onConfirm()
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -564,7 +668,7 @@ private fun ExitConfirmationDialog(
         dismissButton = {
             Button(
                 onClick = {
-                    soundManager.playButtonSound()  // Añadir sonido
+                    soundManager.playButtonSound()
                     onDismiss()
                 }
             ) {
@@ -572,10 +676,4 @@ private fun ExitConfirmationDialog(
             }
         }
     )
-}
-
-private fun formatTime(timeInMillis: Long): String {
-    val seconds = (timeInMillis / 1000) % 60
-    val minutes = (timeInMillis / (1000 * 60)) % 60
-    return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
 }

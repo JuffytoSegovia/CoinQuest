@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ucsur.coinquest.model.GameState
 import com.ucsur.coinquest.model.GameCharacter
+import com.ucsur.coinquest.model.LevelConfig
 import com.ucsur.coinquest.model.LevelConfigurations
 import com.ucsur.coinquest.model.Position
 import com.ucsur.coinquest.utils.SoundManager
@@ -66,27 +67,73 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         return _selectedCharacter.value
     }
 
+    private var coinMovementJob: Job? = null
+
     // Función para iniciar el juego
     fun startGame() {
         if (_selectedCharacter.value != null) {
-            val levelConfig = LevelConfigurations.getConfigForLevel(1)
+            val currentLevel = (_gameState.value as? GameState.LevelCompleted)?.level?.plus(1) ?: 1
+            val levelConfig = LevelConfigurations.getConfigForLevel(currentLevel)
+
             resetGameState()
             startTimer()
+
+            val initialCoinPosition = generateRandomCoinPosition()
             _gameState.value = GameState.Playing(
-                level = levelConfig.levelNumber,
+                level = currentLevel,
                 score = 0,
                 coinsCollected = 0,
                 playerPosition = Position(
                     x = (GAME_AREA_RIGHT - PLAYER_SIZE) / 2,
                     y = (GAME_AREA_BOTTOM - PLAYER_SIZE) / 2
                 ),
-                currentCoinPosition = generateRandomCoinPosition(),
+                currentCoinPosition = initialCoinPosition,
+                coinInitialPosition = if (levelConfig.hasMovingCoins) initialCoinPosition else null,
                 isPaused = false,
                 timeElapsed = 0L,
-                timeLimit = levelConfig.timeLimit
+                timeLimit = levelConfig.timeLimit // Agregamos el timeLimit
             )
+
+            if (levelConfig.hasMovingCoins) {
+                startCoinMovement(levelConfig)
+            }
+
             soundManager.resumeBackgroundMusic()
         }
+    }
+
+    private fun startCoinMovement(levelConfig: LevelConfig) {
+        coinMovementJob?.cancel()
+        coinMovementJob = viewModelScope.launch {
+            while (isActive) {
+                delay(16) // Aproximadamente 60 FPS
+                updateCoinPosition(levelConfig)
+            }
+        }
+    }
+
+    private fun updateCoinPosition(levelConfig: LevelConfig) {
+        val currentState = _gameState.value as? GameState.Playing ?: return
+        if (currentState.isPaused) return
+
+        val initialPosition = currentState.coinInitialPosition ?: return
+        val currentDirection = currentState.coinMovementDirection
+        val newX = currentState.currentCoinPosition.x + (levelConfig.coinMovementSpeed * currentDirection)
+
+        // Verificar límites y cambiar dirección si es necesario
+        val newDirection = when {
+            newX <= GAME_AREA_LEFT -> 1f
+            newX >= GAME_AREA_RIGHT - COIN_SIZE -> -1f
+            else -> currentDirection
+        }
+
+        _gameState.value = currentState.copy(
+            currentCoinPosition = Position(
+                x = newX.coerceIn(GAME_AREA_LEFT, GAME_AREA_RIGHT - COIN_SIZE),
+                y = currentState.currentCoinPosition.y
+            ),
+            coinMovementDirection = newDirection
+        )
     }
 
     // Función para reiniciar el juego
@@ -154,25 +201,33 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
 
     // Función para verificar la colección de monedas
     private fun checkCoinCollection(currentState: GameState.Playing) {
+        val levelConfig = LevelConfigurations.getConfigForLevel(currentState.level)
         val distance = calculateDistance(
             currentState.playerPosition,
             currentState.currentCoinPosition
         )
 
         if (distance < 30f) {
-            soundManager.playCoinSound() // Añadir sonido de moneda
+            soundManager.playCoinSound()
             val newCoinsCollected = currentState.coinsCollected + 1
-            val newScore = currentState.score + 10
+            val newScore = currentState.score + levelConfig.baseScore
 
-            if (newCoinsCollected >= 10) {
-                soundManager.playLevelCompletedSound() // Añadir sonido de nivel completado
+            if (newCoinsCollected >= levelConfig.requiredCoins) {
+                soundManager.playLevelCompletedSound()
                 completeLevelAndCalculateStars(currentState.level, newScore)
             } else {
+                val newCoinPosition = generateRandomCoinPosition()
                 _gameState.value = currentState.copy(
                     coinsCollected = newCoinsCollected,
                     score = newScore,
-                    currentCoinPosition = generateRandomCoinPosition()
+                    currentCoinPosition = newCoinPosition,
+                    coinInitialPosition = if (levelConfig.hasMovingCoins) newCoinPosition else null,
+                    coinMovementDirection = 1f  // Reiniciar la dirección cuando se genera una nueva moneda
                 )
+
+                if (levelConfig.hasMovingCoins) {
+                    startCoinMovement(levelConfig)  // Reiniciar el movimiento para la nueva moneda
+                }
             }
         }
     }
@@ -182,12 +237,14 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         val stars = calculateStars(timeElapsed, finalScore)
 
         timerJob?.cancel()
+        coinMovementJob?.cancel()
 
         _gameState.value = GameState.LevelCompleted(
             level = level,
             finalScore = finalScore,
             timeElapsed = timeElapsed,
-            stars = stars
+            stars = stars,
+            nextLevelUnlocked = true
         )
 
         if (finalScore > _highScore.value) {
@@ -195,14 +252,50 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         }
     }
 
+    // Actualizar calculateStars para usar la configuración del nivel actual
     private fun calculateStars(timeElapsed: Long, score: Int): Int {
-        val levelConfig = LevelConfigurations.getConfigForLevel(1)
+        val currentState = _gameState.value as? GameState.Playing ?: return 1
+        val levelConfig = LevelConfigurations.getConfigForLevel(currentState.level)
         return when {
             timeElapsed <= levelConfig.threeStarTime &&
                     score == (levelConfig.requiredCoins * levelConfig.baseScore) -> 3
             timeElapsed <= levelConfig.twoStarTime &&
                     score >= (levelConfig.requiredCoins * levelConfig.baseScore * 0.8) -> 2
             else -> 1
+        }
+    }
+
+    fun startNextLevel() {
+        val currentState = _gameState.value as? GameState.LevelCompleted ?: return
+        val nextLevel = currentState.level + 1
+
+        if (nextLevel <= 2) {  // Por ahora solo tenemos 2 niveles
+            val levelConfig = LevelConfigurations.getConfigForLevel(nextLevel)
+
+            resetGameState()
+            startTimer()
+
+            val initialCoinPosition = generateRandomCoinPosition()
+            _gameState.value = GameState.Playing(
+                level = nextLevel,
+                score = 0,
+                coinsCollected = 0,
+                playerPosition = Position(
+                    x = (GAME_AREA_RIGHT - PLAYER_SIZE) / 2,
+                    y = (GAME_AREA_BOTTOM - PLAYER_SIZE) / 2
+                ),
+                currentCoinPosition = initialCoinPosition,
+                coinInitialPosition = if (levelConfig.hasMovingCoins) initialCoinPosition else null,
+                isPaused = false,
+                timeElapsed = 0L,
+                timeLimit = levelConfig.timeLimit
+            )
+
+            if (levelConfig.hasMovingCoins) {
+                startCoinMovement(levelConfig)
+            }
+
+            soundManager.resumeBackgroundMusic()
         }
     }
 
@@ -218,7 +311,8 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && !currentState.isPaused) {
             timerJob?.cancel()
-            soundManager.pauseBackgroundMusic() // Pausar música
+            coinMovementJob?.cancel() // Agregar esta línea
+            soundManager.pauseBackgroundMusic()
             _gameState.value = currentState.copy(isPaused = true)
         }
     }
@@ -227,7 +321,11 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && currentState.isPaused) {
             startTimer()
-            soundManager.resumeBackgroundMusic() // Reanudar música
+            val levelConfig = LevelConfigurations.getConfigForLevel(currentState.level)
+            if (levelConfig.hasMovingCoins) {
+                startCoinMovement(levelConfig) // Agregar esta línea
+            }
+            soundManager.resumeBackgroundMusic()
             _gameState.value = currentState.copy(isPaused = false)
         }
     }
@@ -244,6 +342,8 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
             if (previousState != null) {
                 _gameState.value = previousState.copy(isPaused = true)
             } else {
+                // Obtenemos la configuración del nivel 1
+                val levelConfig = LevelConfigurations.getConfigForLevel(1)
                 _gameState.value = GameState.Playing(
                     level = 1,
                     score = 0,
@@ -251,7 +351,8 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
                     playerPosition = Position(150f, 150f),
                     currentCoinPosition = generateRandomCoinPosition(),
                     isPaused = true,
-                    timeElapsed = _gameTimer.value
+                    timeElapsed = _gameTimer.value,
+                    timeLimit = levelConfig.timeLimit  // Agregamos el timeLimit del nivel
                 )
             }
         }
@@ -266,6 +367,7 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
 
     private fun resetGameState() {
         timerJob?.cancel()
+        coinMovementJob?.cancel()
         _gameTimer.value = 0L
         _gameState.value = GameState.NotStarted
     }
@@ -281,5 +383,6 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+        coinMovementJob?.cancel()
     }
 }
