@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ucsur.coinquest.model.GameState
 import com.ucsur.coinquest.model.GameCharacter
+import com.ucsur.coinquest.model.LevelConfigurations
 import com.ucsur.coinquest.model.Position
 import com.ucsur.coinquest.utils.SoundManager
 import kotlinx.coroutines.*
@@ -68,19 +69,21 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
     // Función para iniciar el juego
     fun startGame() {
         if (_selectedCharacter.value != null) {
+            val levelConfig = LevelConfigurations.getConfigForLevel(1)
             resetGameState()
             startTimer()
             _gameState.value = GameState.Playing(
-                level = 1,
+                level = levelConfig.levelNumber,
                 score = 0,
                 coinsCollected = 0,
                 playerPosition = Position(
-                    x = (GAME_AREA_RIGHT - PLAYER_SIZE) / 2,  // Centro X
-                    y = (GAME_AREA_BOTTOM - PLAYER_SIZE) / 2  // Centro Y
+                    x = (GAME_AREA_RIGHT - PLAYER_SIZE) / 2,
+                    y = (GAME_AREA_BOTTOM - PLAYER_SIZE) / 2
                 ),
                 currentCoinPosition = generateRandomCoinPosition(),
                 isPaused = false,
-                timeElapsed = 0L
+                timeElapsed = 0L,
+                timeLimit = levelConfig.timeLimit
             )
             soundManager.resumeBackgroundMusic()
         }
@@ -193,10 +196,13 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
     }
 
     private fun calculateStars(timeElapsed: Long, score: Int): Int {
+        val levelConfig = LevelConfigurations.getConfigForLevel(1)
         return when {
-            timeElapsed <= 30000 && score == 100 -> 3 // Perfecto: menos de 30s
-            timeElapsed <= 45000 && score >= 80 -> 2  // Muy bien: menos de 45s y buen score
-            else -> 1                                 // Completado
+            timeElapsed <= levelConfig.threeStarTime &&
+                    score == (levelConfig.requiredCoins * levelConfig.baseScore) -> 3
+            timeElapsed <= levelConfig.twoStarTime &&
+                    score >= (levelConfig.requiredCoins * levelConfig.baseScore * 0.8) -> 2
+            else -> 1
         }
     }
 

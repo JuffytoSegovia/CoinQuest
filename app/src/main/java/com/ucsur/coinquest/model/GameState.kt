@@ -10,14 +10,16 @@ sealed class GameState {
         val playerPosition: Position,
         val currentCoinPosition: Position,
         val isPaused: Boolean = false,
-        val timeElapsed: Long = 0L    // Tiempo en milisegundos
+        val timeElapsed: Long = 0L,
+        val timeLimit: Long = 60000L  // Tiempo límite por defecto de 60 segundos
     ) : GameState()
 
     data class LevelCompleted(
         val level: Int,
         val finalScore: Int,
         val timeElapsed: Long,
-        val stars: Int
+        val stars: Int,
+        val nextLevelUnlocked: Boolean = false
     ) : GameState()
 
     object ExitConfirmation : GameState()

@@ -36,6 +36,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.ucsur.coinquest.model.LevelConfigurations
 import com.ucsur.coinquest.utils.SoundManager
 
 
@@ -337,9 +338,12 @@ private fun GameHUD(
     coins: Int,
     timeElapsed: Long,
     onPause: () -> Unit,
-    soundManager: SoundManager,  // Añadir este parámetro
+    soundManager: SoundManager,
     modifier: Modifier = Modifier
 ) {
+    val levelConfig = LevelConfigurations.getConfigForLevel(level)
+    val timeRemaining = (levelConfig.timeLimit - timeElapsed).coerceAtLeast(0L)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -350,22 +354,33 @@ private fun GameHUD(
             .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
-    )  {
+    ) {
         Column {
             Text("Nivel: $level")
             Text("Puntuación: $score")
-            Text("Monedas: $coins/10")
+            Text("Monedas: $coins/${levelConfig.requiredCoins}")
         }
 
-        Text(
-            text = formatTime(timeElapsed),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = formatTime(timeRemaining),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    timeRemaining <= 10000 -> Color.Red
+                    timeRemaining <= 20000 -> Color(0xFFFF9800) // Naranja
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
+            Text(
+                text = "Tiempo restante",
+                fontSize = 12.sp
+            )
+        }
 
         IconButton(
             onClick = {
-                soundManager.playButtonSound()  // Añadir sonido
+                soundManager.playButtonSound()
                 onPause()
             }
         ) {
