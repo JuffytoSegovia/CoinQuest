@@ -82,6 +82,7 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
                 isPaused = false,
                 timeElapsed = 0L
             )
+            soundManager.resumeBackgroundMusic()
         }
     }
 
@@ -254,6 +255,7 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         timerJob?.cancel()
         resetGameState()
         _selectedCharacter.value = null // Optional: si quieres resetear también el personaje
+        soundManager.resumeBackgroundMusic()
     }
 
     private fun resetGameState() {
@@ -273,22 +275,5 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
-        soundManager.release() // Liberar recursos de sonido
-    }
-
-    fun toggleSound(enabled: Boolean) {
-        soundManager.toggleSound(enabled)
-    }
-
-    fun toggleMusic(enabled: Boolean) {
-        soundManager.toggleMusic(enabled)
-    }
-
-    fun setSoundVolume(volume: Float) {
-        soundManager.setSoundVolume(volume)
-    }
-
-    fun setMusicVolume(volume: Float) {
-        soundManager.setMusicVolume(volume)
     }
 }

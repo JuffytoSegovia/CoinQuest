@@ -1,5 +1,6 @@
 package com.ucsur.coinquest.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +22,16 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     var hasChanges by remember { mutableStateOf(false) }
     var showSaveConfirmation by remember { mutableStateOf(false) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
+
+    // Función para manejar la salida
+    fun handleExit() {
+        if (hasChanges) {
+            showExitConfirmation = true
+        } else {
+            onNavigateBack()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -33,13 +44,7 @@ fun SettingsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {
-                if (hasChanges) {
-                    showSaveConfirmation = true
-                } else {
-                    onNavigateBack()
-                }
-            }) {
+            IconButton(onClick = { handleExit() }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
             }
             Text(
@@ -60,44 +65,88 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Botón Guardar
-        Button(
-            onClick = {
-                scope.launch {
-                    viewModel.saveSettings()
-                    hasChanges = false
-                    showSaveConfirmation = true
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            enabled = hasChanges
+        // Botón Guardar centrado
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Guardar Cambios")
-        }
-
-        // Diálogo de confirmación de guardado
-        if (showSaveConfirmation) {
-            AlertDialog(
-                onDismissRequest = { showSaveConfirmation = false },
-                title = { Text("Ajustes Guardados") },
-                text = { Text("Los cambios se han guardado correctamente.") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showSaveConfirmation = false
-                            if (!hasChanges) {
-                                onNavigateBack()
-                            }
-                        }
-                    ) {
-                        Text("OK")
+            Button(
+                onClick = {
+                    scope.launch {
+                        viewModel.saveSettings()
+                        hasChanges = false
+                        showSaveConfirmation = true
                     }
-                }
-            )
+                },
+                modifier = Modifier
+                    .width(200.dp)
+                    .padding(vertical = 16.dp),
+                enabled = hasChanges
+            ) {
+                Text("Guardar Cambios")
+            }
         }
     }
+
+    // Diálogo de confirmación de guardado
+    if (showSaveConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSaveConfirmation = false },
+            title = { Text("Ajustes Guardados") },
+            text = { Text("Los cambios se han guardado correctamente.") },
+            confirmButton = {
+                Button(
+                    onClick = { showSaveConfirmation = false }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Diálogo de confirmación al salir con cambios sin guardar
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("Cambios sin guardar") },
+            text = { Text("¿Deseas guardar los cambios antes de salir?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            viewModel.saveSettings()
+                            showExitConfirmation = false
+                            onNavigateBack()
+                        }
+                    }
+                ) {
+                    Text("Guardar y salir")
+                }
+            },
+            dismissButton = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = {
+                            showExitConfirmation = false
+                            onNavigateBack()
+                        }
+                    ) {
+                        Text("Salir sin guardar")
+                    }
+                    TextButton(
+                        onClick = { showExitConfirmation = false }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            }
+        )
+    }
+
+    // Manejar el botón de retroceso del sistema
+    BackHandler { handleExit() }
 }
 
 @Composable
@@ -129,7 +178,7 @@ private fun SoundSettings(
                 Switch(
                     checked = settings.isSoundEnabled,
                     onCheckedChange = {
-                        viewModel.toggleSound(it)  // Cambiado de updateSound a toggleSound
+                        viewModel.toggleSound(it)
                         onSettingsChanged()
                     }
                 )
@@ -161,7 +210,7 @@ private fun SoundSettings(
                 Switch(
                     checked = settings.isMusicEnabled,
                     onCheckedChange = {
-                        viewModel.toggleMusic(it)  // Cambiado de updateMusic a toggleMusic
+                        viewModel.toggleMusic(it)
                         onSettingsChanged()
                     }
                 )

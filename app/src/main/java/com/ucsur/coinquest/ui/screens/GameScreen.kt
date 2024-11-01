@@ -35,10 +35,7 @@ import java.util.Locale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.composed
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.ucsur.coinquest.utils.SoundManager
 
 
@@ -385,10 +382,36 @@ private fun GameControls(
 ) {
     val haptic = LocalHapticFeedback.current
 
+    @Composable
+    fun DirectionalButton(
+        onClick: () -> Unit,
+        icon: ImageVector,
+        contentDescription: String
+    ) {
+        Box(
+            modifier = Modifier
+                .requiredSize(60.dp) // Fuerza un tamaño exacto
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(36.dp),
+                tint = Color.White
+            )
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(220.dp)  // Altura fija para el área de controles
+            .height(220.dp)
             .padding(16.dp)
             .background(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
@@ -401,23 +424,11 @@ private fun GameControls(
             verticalArrangement = Arrangement.Center
         ) {
             // Botón Arriba
-            IconButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onMove(Position(currentPosition.x, currentPosition.y - GameViewModel.MOVEMENT_STEP))
-                },
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    Icons.Filled.KeyboardArrowUp,
-                    "Arriba",
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.White
-                )
-            }
+            DirectionalButton(
+                onClick = { onMove(Position(currentPosition.x, currentPosition.y - GameViewModel.MOVEMENT_STEP)) },
+                icon = Icons.Filled.KeyboardArrowUp,
+                contentDescription = "Arriba"
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -427,134 +438,27 @@ private fun GameControls(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                // Botón Izquierda
-                IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onMove(Position(currentPosition.x - GameViewModel.MOVEMENT_STEP, currentPosition.y))
-                    },
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        "Izquierda",
-                        modifier = Modifier.size(36.dp),
-                        tint = Color.White
-                    )
-                }
+                DirectionalButton(
+                    onClick = { onMove(Position(currentPosition.x - GameViewModel.MOVEMENT_STEP, currentPosition.y)) },
+                    icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = "Izquierda"
+                )
 
-                // Botón Derecha
-                IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onMove(Position(currentPosition.x + GameViewModel.MOVEMENT_STEP, currentPosition.y))
-                    },
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        "Derecha",
-                        modifier = Modifier.size(36.dp),
-                        tint = Color.White
-                    )
-                }
+                DirectionalButton(
+                    onClick = { onMove(Position(currentPosition.x + GameViewModel.MOVEMENT_STEP, currentPosition.y)) },
+                    icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Derecha"
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Botón Abajo
-            IconButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onMove(Position(currentPosition.x, currentPosition.y + GameViewModel.MOVEMENT_STEP))
-                },
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    Icons.Filled.KeyboardArrowDown,
-                    "Abajo",
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PauseMenu(
-    onResume: () -> Unit,
-    onExit: () -> Unit,
-    soundManager: SoundManager
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)), // Fondo semi-transparente
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp)
-        ) {
-            Text(
-                text = "Juego Pausado",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
+            DirectionalButton(
+                onClick = { onMove(Position(currentPosition.x, currentPosition.y + GameViewModel.MOVEMENT_STEP)) },
+                icon = Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Abajo"
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    soundManager.playButtonSound()
-                    onResume()
-                },
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
-                ),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Text(
-                    "Continuar",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Button(
-                onClick = {
-                    soundManager.playButtonSound()
-                    onExit()
-                },
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
-                ),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Text(
-                    "Salir",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
         }
     }
 }
@@ -659,16 +563,4 @@ private fun formatTime(timeInMillis: Long): String {
     val seconds = (timeInMillis / 1000) % 60
     val minutes = (timeInMillis / (1000 * 60)) % 60
     return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
-}
-
-// Añadir esta función de extensión al final del archivo
-private fun Modifier.pressedAlpha(alpha: Float): Modifier = composed {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    graphicsLayer(alpha = if (isPressed) alpha else 1f)
-        .clickable(
-            interactionSource = interactionSource,
-            indication = null
-        ) { }
 }
