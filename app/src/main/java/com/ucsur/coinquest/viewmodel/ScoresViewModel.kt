@@ -1,5 +1,6 @@
 package com.ucsur.coinquest.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ucsur.coinquest.data.ScoreRepository
@@ -21,6 +22,7 @@ class ScoresViewModel(
     private fun loadTopScores() {
         viewModelScope.launch {
             repository.getTopScores().collect { scores ->
+                Log.d("ScoresViewModel", "Scores recibidos: ${scores.size}")
                 _scores.value = scores
             }
         }
