@@ -9,6 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.viewmodel.SettingsViewModel
 import com.ucsur.coinquest.model.Settings
 import kotlinx.coroutines.launch
@@ -39,19 +42,24 @@ fun SettingsScreen(
             .padding(16.dp)
     ) {
         // Barra superior con botón de retroceso
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        IconButton(onClick = { handleExit() }) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+        }
+
+        // Título centrado con el formato estandarizado
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = { handleExit() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-            }
             Text(
                 text = "Ajustes",
-                style = MaterialTheme.typography.headlineMedium
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.width(48.dp))
         }
 
         Spacer(modifier = Modifier.height(32.dp))

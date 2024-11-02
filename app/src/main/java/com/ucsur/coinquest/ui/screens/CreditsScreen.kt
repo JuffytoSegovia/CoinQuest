@@ -1,10 +1,13 @@
 package com.ucsur.coinquest.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,7 +23,9 @@ import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.R
 
 @Composable
-fun CreditsScreen() {
+fun CreditsScreen(
+    onNavigateBack: () -> Unit
+) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -30,12 +35,34 @@ fun CreditsScreen() {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Botón de retroceso
+        Row(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver"
+                )
+            }
+        }
+
+        // Título principal
         Text(
-            text = "Desarrolladores",
+            text = "Créditos",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(vertical = 24.dp)
+        )
+
+        // Sección Desarrolladores
+        Text(
+            text = "Desarrolladores",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
         DeveloperCard(
@@ -54,13 +81,21 @@ fun CreditsScreen() {
             instagramUrl = "https://www.instagram.com/juffyto/"
         )
 
+        // Sección Recursos
+        Text(
+            text = "Recursos Utilizados",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 32.dp, bottom = 16.dp)
+        )
+
         ResourcesSection()
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeveloperCard(
+private fun DeveloperCard(
     name: String,
     description: String,
     linkedinUrl: String,
@@ -76,11 +111,9 @@ fun DeveloperCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Foto de perfil
             Image(
                 painter = painterResource(id = imageRes),
                 contentDescription = "Foto de $name",
@@ -92,7 +125,6 @@ fun DeveloperCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nombre
             Text(
                 text = name,
                 fontSize = 24.sp,
@@ -103,7 +135,6 @@ fun DeveloperCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Descripción
             Text(
                 text = description,
                 fontSize = 16.sp,
@@ -114,7 +145,6 @@ fun DeveloperCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Redes sociales
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
@@ -143,19 +173,182 @@ fun DeveloperCard(
 }
 
 @Composable
-fun ResourcesSection() {
-    Column(
+private fun ResourcesSection() {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Text(
-            text = "Recursos Utilizados",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            ResourceCategory(
+                title = "Desarrollo",
+                items = listOf(
+                    ResourceItem(
+                        name = "Android Studio con Kotlin",
+                        description = "IDE principal para el desarrollo"
+                    ),
+                    ResourceItem(
+                        name = "Jetpack Compose",
+                        description = "Framework UI moderno para Android"
+                    ),
+                    ResourceItem(
+                        name = "Firebase",
+                        url = "https://firebase.google.com",
+                        description = "Base de datos y backend"
+                    ),
+                    ResourceItem(
+                        name = "GitHub",
+                        description = "Control de versiones y repositorio"
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ResourceCategory(
+                title = "Diseño y Recursos Visuales",
+                items = listOf(
+                    ResourceItem(
+                        name = "ChatGPT",
+                        description = "Generación del logo del aplicativo"
+                    ),
+                    ResourceItem(
+                        name = "Photopea",
+                        url = "https://www.photopea.com/",
+                        description = "Editor de imágenes online"
+                    ),
+                    ResourceItem(
+                        name = "Flaticon",
+                        url = "https://www.flaticon.es/",
+                        description = "Iconos del aplicativo"
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ResourceCategory(
+                title = "Recursos de Audio",
+                items = listOf(
+                    ResourceItem(
+                        name = "Pixabay Music",
+                        url = "https://pixabay.com/es/music/",
+                        description = "Música de fondo"
+                    ),
+                    ResourceItem(
+                        name = "Sonidos MP3",
+                        url = "https://www.sonidosmp3gratis.com/",
+                        description = "Efectos de sonido"
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ResourceCategory(
+                title = "Bibliotecas Adicionales",
+                items = listOf(
+                    ResourceItem(
+                        name = "Material Design 3",
+                        description = "Componentes y sistema de diseño"
+                    ),
+                    ResourceItem(
+                        name = "Coroutines",
+                        description = "Programación asíncrona"
+                    ),
+                    ResourceItem(
+                        name = "Navigation Component",
+                        description = "Navegación entre pantallas"
+                    ),
+                    ResourceItem(
+                        name = "DataStore",
+                        description = "Almacenamiento de preferencias"
+                    )
+                )
+            )
+        }
     }
+}
+
+@Composable
+private fun ResourceCategory(
+    title: String,
+    items: List<ResourceItem>
+) {
+    Text(
+        text = title,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+
+    items.forEach { item ->
+        ResourceItemRow(item)
+    }
+}
+
+@Composable
+private fun ResourceItemRow(
+    item: ResourceItem,
+    modifier: Modifier = Modifier
+) {
+    val uriHandler = LocalUriHandler.current
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Bullet point
+            Text(
+                text = "•",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+
+            // Contenido principal
+            Column {
+                // Nombre del recurso (clickeable si tiene URL)
+                if (item.url != null) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { uriHandler.openUri(item.url) }
+                    )
+                } else {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                // Descripción en una nueva línea
+                item.description?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class ResourceItem(
+    val name: String,
+    val url: String? = null,
+    val description: String? = null
+) {
+    constructor(name: String, description: String) : this(name, null, description)
 }

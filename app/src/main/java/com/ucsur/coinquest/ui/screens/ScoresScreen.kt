@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ucsur.coinquest.model.Score
 import com.ucsur.coinquest.viewmodel.ScoresViewModel
 
@@ -30,6 +31,7 @@ fun ScoresScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // Botón de retroceso
         IconButton(onClick = onNavigateBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -37,11 +39,21 @@ fun ScoresScreen(
             )
         }
 
-        Text(
-            text = "Tabla de Puntajes",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
+        // Título centrado con el formato estandarizado
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Puntajes",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
+            )
+        }
 
         if (scores.isEmpty()) {
             // Mostrar mensaje cuando no hay puntajes

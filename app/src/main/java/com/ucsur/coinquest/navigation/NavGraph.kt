@@ -20,27 +20,27 @@ import com.ucsur.coinquest.viewmodel.ScoresViewModel
 import com.ucsur.coinquest.viewmodel.ScoresViewModelFactory
 
 sealed class Screen(val route: String) {
-    object Splash : Screen("splash")
-    object Menu : Screen("menu")
-    object Game : Screen("game")
-    object Characters : Screen("characters")
-    object Scores : Screen("scores")
-    object Settings : Screen("settings")
-    object Credits : Screen("credits")
+    data object Splash : Screen("splash")
+    data object Menu : Screen("menu")
+    data object Game : Screen("game")
+    data object Characters : Screen("characters")
+    data object Scores : Screen("scores")
+    data object Settings : Screen("settings")
+    data object Credits : Screen("credits")
 }
 
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    soundManager: SoundManager,  // Añadido soundManager
-    onExitApp: () -> Unit = {}
+    soundManager: SoundManager  // Removido onExitApp ya que no se usa
 ) {
     val context = LocalContext.current
-    val scoreRepository = remember { ScoreRepository() }
+    // Renombrado para evitar shadowing
+    val globalScoreRepository = remember { ScoreRepository() }
 
     // Crear el ViewModel usando el Factory
     val viewModel: GameViewModel = viewModel(
-        factory = GameViewModelFactory(soundManager, scoreRepository)
+        factory = GameViewModelFactory(soundManager, globalScoreRepository)
     )
 
     NavHost(
@@ -65,7 +65,7 @@ fun NavGraph(
                 onNavigateToScores = { navController.navigate(Screen.Scores.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToCredits = { navController.navigate(Screen.Credits.route) },
-                soundManager = soundManager  // Pasar el soundManager
+                soundManager = soundManager
             )
         }
 
@@ -96,18 +96,19 @@ fun NavGraph(
                         popUpTo(Screen.Menu.route) { inclusive = true }
                     }
                 },
-                soundManager = soundManager  // Añadir este parámetro
+                soundManager = soundManager
             )
         }
 
         composable(Screen.Credits.route) {
-            CreditsScreen()
+            CreditsScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
 
         composable(Screen.Scores.route) {
-            val scoreRepository = remember { ScoreRepository() }
             val scoresViewModel = viewModel<ScoresViewModel>(
-                factory = ScoresViewModelFactory(scoreRepository)
+                factory = ScoresViewModelFactory(globalScoreRepository)  // Usando el repository global
             )
 
             ScoresScreen(
