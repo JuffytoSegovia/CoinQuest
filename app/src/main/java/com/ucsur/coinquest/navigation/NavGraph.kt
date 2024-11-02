@@ -15,6 +15,9 @@ import com.ucsur.coinquest.utils.SoundManager
 import com.ucsur.coinquest.viewmodel.SettingsViewModel
 import com.ucsur.coinquest.viewmodel.SettingsViewModelFactory
 import androidx.compose.ui.platform.LocalContext
+import com.ucsur.coinquest.data.ScoreRepository
+import com.ucsur.coinquest.viewmodel.ScoresViewModel
+import com.ucsur.coinquest.viewmodel.ScoresViewModelFactory
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -33,10 +36,11 @@ fun NavGraph(
     onExitApp: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val scoreRepository = remember { ScoreRepository() }
 
     // Crear el ViewModel usando el Factory
     val viewModel: GameViewModel = viewModel(
-        factory = GameViewModelFactory(soundManager)
+        factory = GameViewModelFactory(soundManager, scoreRepository)
     )
 
     NavHost(
@@ -101,7 +105,15 @@ fun NavGraph(
         }
 
         composable(Screen.Scores.route) {
-            // ScoresScreen()
+            val scoreRepository = remember { ScoreRepository() }
+            val scoresViewModel = viewModel<ScoresViewModel>(
+                factory = ScoresViewModelFactory(scoreRepository)
+            )
+
+            ScoresScreen(
+                viewModel = scoresViewModel,
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
 
         composable(Screen.Settings.route) {

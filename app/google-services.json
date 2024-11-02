@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "290859110669",
+    "project_id": "coinquest-4319c",
+    "storage_bucket": "coinquest-4319c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:290859110669:android:313ed4bfb05586aa23e044",
+        "android_client_info": {
+          "package_name": "com.ucsur.coinquest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYXUq8-eQMkbKpt99xRfAcGfJqyQBr9zw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

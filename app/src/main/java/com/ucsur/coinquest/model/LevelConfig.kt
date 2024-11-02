@@ -13,7 +13,7 @@ data class LevelConfig(
 )
 
 object LevelConfigurations {
-    val LEVEL_1 = LevelConfig(
+    private val LEVEL_1 = LevelConfig(
         levelNumber = 1,
         requiredCoins = 3, // Temporalmente 3 monedas para pruebas
         timeLimit = 60000L,
@@ -22,7 +22,7 @@ object LevelConfigurations {
         twoStarTime = 55000L
     )
 
-    val LEVEL_2 = LevelConfig(
+    private val LEVEL_2 = LevelConfig(
         levelNumber = 2,
         requiredCoins = 5, // Temporalmente 5 monedas para pruebas
         timeLimit = 75000L,      // 1 minuto y 15 segundos

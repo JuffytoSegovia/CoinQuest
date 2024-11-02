@@ -2,7 +2,7 @@ package com.ucsur.coinquest.model
 
 sealed class GameState {
     /** Estado inicial del juego */
-    object NotStarted : GameState()
+    data object NotStarted : GameState()
 
     /** Estado durante el juego activo */
     data class Playing(
@@ -36,7 +36,9 @@ sealed class GameState {
         val timeElapsed: Long,
         val stars: Int,
         val nextLevelUnlocked: Boolean = true,
-        val isNewHighScore: Boolean = false   // Nueva propiedad para indicar récord
+        val isNewHighScore: Boolean = false,
+        val playerName: String,
+        val characterName: String
     ) : GameState() {
         init {
             require(level > 0) { "El nivel debe ser mayor que 0" }
@@ -47,7 +49,7 @@ sealed class GameState {
     }
 
     /** Estado de confirmación de salida */
-    object ExitConfirmation : GameState()
+    data object ExitConfirmation : GameState()
 }
 
 /**

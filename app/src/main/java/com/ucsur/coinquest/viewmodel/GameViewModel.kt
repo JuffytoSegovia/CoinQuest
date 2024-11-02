@@ -1,20 +1,28 @@
 package com.ucsur.coinquest.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ucsur.coinquest.data.ScoreRepository
 import com.ucsur.coinquest.model.GameState
 import com.ucsur.coinquest.model.GameCharacter
 import com.ucsur.coinquest.model.LevelConfig
 import com.ucsur.coinquest.model.LevelConfigurations
 import com.ucsur.coinquest.model.Position
+import com.ucsur.coinquest.model.Score
 import com.ucsur.coinquest.utils.SoundManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
+import com.google.firebase.Timestamp
 
 
-class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
+class GameViewModel(
+    private val soundManager: SoundManager,
+    private val scoreRepository: ScoreRepository  // Añadir este parámetro
+) : ViewModel() {
 
     companion object {
         // Definición del área de juego - ajustados para permitir un click más
@@ -116,7 +124,6 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
         val currentState = _gameState.value as? GameState.Playing ?: return
         if (currentState.isPaused) return
 
-        val initialPosition = currentState.coinInitialPosition ?: return
         val currentDirection = currentState.coinMovementDirection
         val newX = currentState.currentCoinPosition.x + (levelConfig.coinMovementSpeed * currentDirection)
 
@@ -235,16 +242,33 @@ class GameViewModel(private val soundManager: SoundManager) : ViewModel() {
     private fun completeLevelAndCalculateStars(level: Int, finalScore: Int) {
         val timeElapsed = _gameTimer.value
         val stars = calculateStars(timeElapsed, finalScore)
+        val character = _selectedCharacter.value
 
-        timerJob?.cancel()
-        coinMovementJob?.cancel()
+        val score = Score(
+            playerId = UUID.randomUUID().toString(),
+            playerName = character?.customName ?: "",
+            characterName = character?.defaultName ?: "",
+            score = finalScore,
+            level = level,
+            stars = stars,
+            timeElapsed = timeElapsed,
+            timestamp = Timestamp.now()  // Usar Timestamp.now() en lugar de System.currentTimeMillis()
+        )
+
+        // Añadir Log para debug
+        Log.d("GameViewModel", "Guardando score: $score")
+        viewModelScope.launch {
+            scoreRepository.saveScore(score)
+        }
 
         _gameState.value = GameState.LevelCompleted(
             level = level,
             finalScore = finalScore,
             timeElapsed = timeElapsed,
             stars = stars,
-            nextLevelUnlocked = true
+            nextLevelUnlocked = true,
+            playerName = character?.customName ?: "",
+            characterName = character?.defaultName ?: ""
         )
 
         if (finalScore > _highScore.value) {
