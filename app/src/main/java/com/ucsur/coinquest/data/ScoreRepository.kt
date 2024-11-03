@@ -13,6 +13,33 @@ class ScoreRepository {
     private val firestore = Firebase.firestore
     private val scoresCollection = firestore.collection("scores")
 
+    fun getTopScores(): Flow<List<Score>> = flow {
+        try {
+            val snapshot = scoresCollection
+                .orderBy("score", Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val scores = snapshot.toObjects(Score::class.java)
+                .groupBy { it.level }
+                .mapValues { (_, levelScores) ->
+                    levelScores
+                        .sortedWith(
+                            compareByDescending<Score> { it.score }
+                                .thenBy { it.timeElapsed }
+                        )
+                        .take(5)
+                }
+                .values
+                .flatten()
+
+            emit(scores)
+        } catch (e: Exception) {
+            Log.e("ScoreRepository", "Error obteniendo scores", e)
+            emit(emptyList())
+        }
+    }
+
     suspend fun saveScore(score: Score) {
         try {
             Log.d("ScoreRepository", "Intentando guardar score: $score")
@@ -26,24 +53,6 @@ class ScoreRepository {
                 .await()
         } catch (e: Exception) {
             Log.e("ScoreRepository", "Error en saveScore", e)
-        }
-    }
-
-    fun getTopScores(limit: Int = 10): Flow<List<Score>> = flow {
-        try {
-            Log.d("ScoreRepository", "Obteniendo top scores...")
-            val snapshot = scoresCollection
-                .orderBy("score", Query.Direction.DESCENDING)
-                .limit(limit.toLong())
-                .get()
-                .await()
-
-            val scores = snapshot.toObjects(Score::class.java)
-            Log.d("ScoreRepository", "Scores obtenidos: ${scores.size}")
-            emit(scores)
-        } catch (e: Exception) {
-            Log.e("ScoreRepository", "Error obteniendo scores", e)
-            emit(emptyList())
         }
     }
 }
