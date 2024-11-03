@@ -49,7 +49,6 @@ class GameViewModel(
 
     // Puntaje más alto
     private val _highScore = MutableStateFlow(0)
-    val highScore: StateFlow<Int> = _highScore.asStateFlow()
 
     // Tiempo de juego
     private val _gameTimer = MutableStateFlow(0L)
@@ -394,13 +393,6 @@ class GameViewModel(
         coinMovementJob?.cancel()
         _gameTimer.value = 0L
         _gameState.value = GameState.NotStarted
-    }
-
-    // Función para guardar el estado del juego
-    fun saveGameState() {
-        viewModelScope.launch {
-            // Implementar guardado de estado
-        }
     }
 
     // Limpieza de recursos
