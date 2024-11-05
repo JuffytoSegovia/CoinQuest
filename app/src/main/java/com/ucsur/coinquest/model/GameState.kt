@@ -48,6 +48,22 @@ sealed class GameState {
         }
     }
 
+    /** Estado cuando se acaba el tiempo */
+    data class GameOver(
+        val level: Int,
+        val finalScore: Int,
+        val coinsCollected: Int,
+        val totalCoins: Int,
+        val timeElapsed: Long
+    ) : GameState() {
+        init {
+            require(level > 0) { "El nivel debe ser mayor que 0" }
+            require(finalScore >= 0) { "El puntaje final no puede ser negativo" }
+            require(coinsCollected >= 0) { "Las monedas recolectadas no pueden ser negativas" }
+            require(timeElapsed >= 0) { "El tiempo transcurrido no puede ser negativo" }
+        }
+    }
+
     /** Estado de confirmación de salida */
     data object ExitConfirmation : GameState()
 }

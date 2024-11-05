@@ -1,6 +1,11 @@
 package com.ucsur.coinquest.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -89,7 +94,13 @@ fun SettingsScreen(
                 modifier = Modifier
                     .width(200.dp)
                     .padding(vertical = 16.dp),
-                enabled = hasChanges
+                enabled = hasChanges,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),  // Cambiado
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)  // Cambiado
+                )
             ) {
                 Text("Guardar Cambios")
             }
@@ -141,12 +152,12 @@ fun SettingsScreen(
                             onNavigateBack()
                         }
                     ) {
-                        Text("Salir sin guardar")
+                        Text("Salir sin guardar",color = MaterialTheme.colorScheme.onSurface)
                     }
                     TextButton(
                         onClick = { showExitConfirmation = false }
                     ) {
-                        Text("Cancelar")
+                        Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -177,66 +188,81 @@ private fun SoundSettings(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Efectos de sonido
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Efectos de sonido")
-                Switch(
-                    checked = settings.isSoundEnabled,
-                    onCheckedChange = {
-                        viewModel.toggleSound(it)
-                        onSettingsChanged()
-                    }
-                )
-            }
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Efectos de sonido")
+                    Switch(
+                        checked = settings.isSoundEnabled,
+                        onCheckedChange = {
+                            viewModel.toggleSound(it)
+                            onSettingsChanged()
+                        }
+                    )
+                }
 
-            if (settings.isSoundEnabled) {
-                Text(
-                    text = "Volumen de efectos",
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Slider(
-                    value = settings.soundVolume,
-                    onValueChange = {
-                        viewModel.updateSoundVolume(it)
-                        onSettingsChanged()
-                    },
-                    enabled = settings.isSoundEnabled
-                )
+                AnimatedVisibility(
+                    visible = settings.isSoundEnabled,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column {
+                        Text(
+                            text = "Volumen de efectos",
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        Slider(
+                            value = settings.soundVolume,
+                            onValueChange = {
+                                viewModel.updateSoundVolume(it)
+                                onSettingsChanged()
+                            }
+                        )
+                    }
+                }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Música de fondo")
-                Switch(
-                    checked = settings.isMusicEnabled,
-                    onCheckedChange = {
-                        viewModel.toggleMusic(it)
-                        onSettingsChanged()
-                    }
-                )
-            }
+            // Música de fondo
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Música de fondo")
+                    Switch(
+                        checked = settings.isMusicEnabled,
+                        onCheckedChange = {
+                            viewModel.toggleMusic(it)
+                            onSettingsChanged()
+                        }
+                    )
+                }
 
-            if (settings.isMusicEnabled) {
-                Text(
-                    text = "Volumen de música",
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Slider(
-                    value = settings.musicVolume,
-                    onValueChange = {
-                        viewModel.updateMusicVolume(it)
-                        onSettingsChanged()
-                    },
-                    enabled = settings.isMusicEnabled
-                )
+                AnimatedVisibility(
+                    visible = settings.isMusicEnabled,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column {
+                        Text(
+                            text = "Volumen de música",
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        Slider(
+                            value = settings.musicVolume,
+                            onValueChange = {
+                                viewModel.updateMusicVolume(it)
+                                onSettingsChanged()
+                            }
+                        )
+                    }
+                }
             }
         }
     }

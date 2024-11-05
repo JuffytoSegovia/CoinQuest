@@ -195,7 +195,6 @@ fun CharacterCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NameDialog(
     defaultName: String,
@@ -224,12 +223,12 @@ fun NameDialog(
         },
         confirmButton = {
             TextButton(onClick = { onNameConfirm(name) }) {
-                Text("Confirmar")
+                Text("Confirmar", color = MaterialTheme.colorScheme.onSurface)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
             }
         }
     )

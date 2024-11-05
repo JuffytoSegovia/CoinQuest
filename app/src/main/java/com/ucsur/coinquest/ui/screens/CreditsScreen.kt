@@ -2,6 +2,7 @@ package com.ucsur.coinquest.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -67,7 +69,7 @@ fun CreditsScreen(
 
         DeveloperCard(
             name = "Tifany Ramos Espinoza",
-            description = "Estudiante de Ingeniería de sistemas e informática de la UPB y UCSUR.",
+            description = "Estudiante de Ingeniería de sistemas e informática de la UPB y UCSUR. ",
             linkedinUrl = "https://www.linkedin.com/in/tifany-brissette-ramos-espinoza-5077211b5/",
             instagramUrl = "https://www.instagram.com/_tifany_ramos/"
         )
@@ -278,11 +280,12 @@ private fun ResourceCategory(
     title: String,
     items: List<ResourceItem>
 ) {
+    val isDarkTheme = isSystemInDarkTheme()  // Añadir esta línea
+
     Text(
         text = title,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.titleLarge,
+        color = if (isDarkTheme) Color(0xFFFF8A80) else MaterialTheme.colorScheme.primary,  // Rojo claro para modo oscuro
         modifier = Modifier.padding(bottom = 8.dp)
     )
 
@@ -297,6 +300,7 @@ private fun ResourceItemRow(
     modifier: Modifier = Modifier
 ) {
     val uriHandler = LocalUriHandler.current
+    val isDarkTheme = isSystemInDarkTheme()  // Añadir esta línea
 
     Column(
         modifier = modifier
@@ -307,35 +311,33 @@ private fun ResourceItemRow(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bullet point
             Text(
                 text = "•",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(end = 8.dp)
             )
 
-            // Contenido principal
             Column {
-                // Nombre del recurso (clickeable si tiene URL)
                 if (item.url != null) {
                     Text(
                         text = item.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isDarkTheme) Color(0xFF90CAF9) else MaterialTheme.colorScheme.primary,  // Azul claro para modo oscuro
                         modifier = Modifier.clickable { uriHandler.openUri(item.url) }
                     )
                 } else {
                     Text(
                         text = item.name,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                // Descripción en una nueva línea
                 item.description?.let {
                     Text(
                         text = it,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp)
                     )

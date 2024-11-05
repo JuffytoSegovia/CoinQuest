@@ -208,7 +208,7 @@ private fun ScoreItemWithRank(
                 Text(
                     text = "${score.score}",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Row {
                     repeat(score.stars) {

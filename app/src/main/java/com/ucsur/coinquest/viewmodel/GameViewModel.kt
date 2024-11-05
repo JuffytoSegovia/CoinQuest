@@ -133,11 +133,39 @@ class GameViewModel(
             else -> currentDirection
         }
 
+        val newPosition = Position(
+            x = newX.coerceIn(GAME_AREA_LEFT, GAME_AREA_RIGHT - COIN_SIZE),
+            y = currentState.currentCoinPosition.y
+        )
+
+        // Verificar si hay colisión con el personaje en la nueva posición
+        val distance = calculateDistance(currentState.playerPosition, newPosition)
+        if (distance < 30f) {
+            // Colisión detectada, recolectar moneda
+            soundManager.playCoinSound()
+            val newCoinsCollected = currentState.coinsCollected + 1
+            val newScore = currentState.score + levelConfig.baseScore
+
+            if (newCoinsCollected >= levelConfig.requiredCoins) {
+                soundManager.playLevelCompletedSound()
+                completeLevelAndCalculateStars(currentState.level, newScore)
+                return
+            } else {
+                val newCoinPosition = generateRandomCoinPosition()
+                _gameState.value = currentState.copy(
+                    coinsCollected = newCoinsCollected,
+                    score = newScore,
+                    currentCoinPosition = newCoinPosition,
+                    coinInitialPosition = newCoinPosition,
+                    coinMovementDirection = 1f
+                )
+                return
+            }
+        }
+
+        // Si no hubo colisión, actualizar la posición de la moneda
         _gameState.value = currentState.copy(
-            currentCoinPosition = Position(
-                x = newX.coerceIn(GAME_AREA_LEFT, GAME_AREA_RIGHT - COIN_SIZE),
-                y = currentState.currentCoinPosition.y
-            ),
+            currentCoinPosition = newPosition,
             coinMovementDirection = newDirection
         )
     }
@@ -163,10 +191,24 @@ class GameViewModel(
     private fun updateGameStateWithTime() {
         val currentState = _gameState.value
         if (currentState is GameState.Playing && !currentState.isPaused) {
-            _gameTimer.value += 1000
-            _gameState.value = currentState.copy(
-                timeElapsed = _gameTimer.value
-            )
+            val timeElapsed = _gameTimer.value
+            val remainingTime = currentState.timeLimit - timeElapsed
+
+            if (remainingTime <= 0) {
+                // Juego terminado por tiempo
+                _gameState.value = GameState.GameOver(
+                    level = currentState.level,
+                    finalScore = currentState.score,
+                    coinsCollected = currentState.coinsCollected,
+                    totalCoins = LevelConfigurations.getConfigForLevel(currentState.level).requiredCoins,
+                    timeElapsed = timeElapsed
+                )
+            } else {
+                // Actualizar el estado normal del juego
+                _gameState.value = currentState.copy(
+                    timeElapsed = timeElapsed
+                )
+            }
         }
     }
 
@@ -378,6 +420,14 @@ class GameViewModel(
                     timeLimit = levelConfig.timeLimit  // Agregamos el timeLimit del nivel
                 )
             }
+        }
+    }
+
+    fun restartFromGameOver() {
+        val currentState = _gameState.value as? GameState.GameOver
+        if (currentState != null) {
+            resetGameState()
+            startGame()
         }
     }
 

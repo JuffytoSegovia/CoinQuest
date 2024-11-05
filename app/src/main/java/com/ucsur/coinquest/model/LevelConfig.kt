@@ -13,47 +13,72 @@ data class LevelConfig(
 )
 
 object LevelConfigurations {
-    private val LEVEL_1 = LevelConfig(
+    // Constante para cambiar entre modos
+    private const val TEST_MODE = false // Cambiar a false para modo final
+
+    // Configuraciones para modo TEST
+    private val TEST_LEVEL_1 = LevelConfig(
         levelNumber = 1,
-        requiredCoins = 3, // Temporalmente 3 monedas para pruebas
-        timeLimit = 60000L,
+        requiredCoins = 3,
+        timeLimit = 15000L,         // 15 segundos total
         baseScore = 10,
-        threeStarTime = 45000L,
-        twoStarTime = 55000L
+        threeStarTime = 4000L,      // 4 segundos para 3 estrellas
+        twoStarTime = 5000L,        // 5 segundos para 2 estrellas
+        // Más de 5 segundos = 1 estrella
+        hasMovingCoins = false
     )
 
-    private val LEVEL_2 = LevelConfig(
+    private val TEST_LEVEL_2 = LevelConfig(
         levelNumber = 2,
-        requiredCoins = 5, // Temporalmente 5 monedas para pruebas
-        timeLimit = 75000L,      // 1 minuto y 15 segundos
-        baseScore = 15,          // Más puntos por moneda
-        threeStarTime = 60000L,  // 1 minuto para 3 estrellas
-        twoStarTime = 70000L,    // 1 minuto y 10 segundos para 2 estrellas
+        requiredCoins = 5,
+        timeLimit = 20000L,         // 20 segundos total
+        baseScore = 15,
+        threeStarTime = 10000L,     // 10 segundos para 3 estrellas
+        twoStarTime = 12000L,       // 12 segundos para 2 estrellas
+        // Más de 12 segundos = 1 estrella
         hasMovingCoins = true,
-        coinMovementSpeed = 1.5f, // Reducido a 1.5 para mejor jugabilidad
+        coinMovementSpeed = 1.5f,
         coinMovementRange = 100f
     )
 
-    // Para facilitar el cambio entre modo prueba y modo normal
-    private const val TEST_MODE = true // Cambiar a false para versión final
+    // Configuraciones para modo FINAL
+    private val FINAL_LEVEL_1 = LevelConfig(
+        levelNumber = 1,
+        requiredCoins = 10,
+        timeLimit = 45000L,         // 45 segundos total
+        baseScore = 10,
+        threeStarTime = 24000L,     // 24 segundos para 3 estrellas
+        twoStarTime = 28000L,       // 28 segundos para 2 estrellas
+        // Más de 28 segundos = 1 estrella
+        hasMovingCoins = false
+    )
+
+    private val FINAL_LEVEL_2 = LevelConfig(
+        levelNumber = 2,
+        requiredCoins = 15,
+        timeLimit = 60000L,         // 60 segundos total
+        baseScore = 15,
+        threeStarTime = 35000L,     // 30 segundos para 3 estrellas
+        twoStarTime = 40000L,       // 40 segundos para 2 estrellas
+        // Más de 40 segundos = 1 estrella
+        hasMovingCoins = true,
+        coinMovementSpeed = 1.5f,
+        coinMovementRange = 100f
+    )
 
     fun getConfigForLevel(level: Int): LevelConfig {
-        val config = when (level) {
-            1 -> LEVEL_1
-            2 -> LEVEL_2
-            else -> LEVEL_1
-        }
-
         return if (TEST_MODE) {
-            config.copy(
-                requiredCoins = when (level) {
-                    1 -> 3  // Monedas para pruebas nivel 1
-                    2 -> 5  // Monedas para pruebas nivel 2
-                    else -> 3
-                }
-            )
+            when (level) {
+                1 -> TEST_LEVEL_1
+                2 -> TEST_LEVEL_2
+                else -> TEST_LEVEL_1
+            }
         } else {
-            config
+            when (level) {
+                1 -> FINAL_LEVEL_1
+                2 -> FINAL_LEVEL_2
+                else -> FINAL_LEVEL_1
+            }
         }
     }
 }

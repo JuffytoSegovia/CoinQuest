@@ -31,12 +31,14 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.border
 import java.util.Locale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.ucsur.coinquest.model.LevelConfigurations
+import com.ucsur.coinquest.ui.theme.SecondaryButtonColor
 import com.ucsur.coinquest.utils.SoundManager
 
 // Función para formatear el tiempo - fuera de las composables
@@ -62,7 +64,8 @@ fun GameScreen(
             is GameState.NotStarted -> onNavigateToCharacterSelect()
             is GameState.Playing -> viewModel.pauseGame()
             is GameState.ExitConfirmation -> viewModel.cancelExit()
-            is GameState.LevelCompleted -> {} // No hacer nada, se maneja en LevelCompletedScreen
+            is GameState.LevelCompleted -> {}
+            is GameState.GameOver -> {}
         }
     }
 
@@ -101,6 +104,15 @@ fun GameScreen(
                     onBackToMenu = onNavigateToMenu,
                     onRestartGame = viewModel::restartGame,
                     onNextLevel = viewModel::startNextLevel,
+                    soundManager = soundManager
+                )
+            }
+
+            is GameState.GameOver -> {
+                GameOverScreen(
+                    state = currentState,
+                    onRestartGame = viewModel::restartFromGameOver,
+                    onBackToMenu = onNavigateToMenu,
                     soundManager = soundManager
                 )
             }
@@ -204,53 +216,66 @@ private fun GamePlayScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                        RoundedCornerShape(16.dp)
-                    )
             ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val gridSize = 50f
-                    for (x in 0..size.width.toInt() step gridSize.toInt()) {
-                        drawLine(
-                            Color.Gray.copy(alpha = 0.3f),
-                            start = Offset(x.toFloat(), 0f),
-                            end = Offset(x.toFloat(), size.height),
-                            strokeWidth = 1f
+                // Primero dibujamos el contenedor con borde
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
+                            RoundedCornerShape(0.dp)  // Quitamos el redondeo
+                        )
+                        .border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(0.dp)  // Quitamos el redondeo
+                        )
+                ) {
+                    // Luego dibujamos la cuadrícula
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val gridSize = 50f
+                        for (x in 0..size.width.toInt() step gridSize.toInt()) {
+                            drawLine(
+                                Color.Gray.copy(alpha = 0.3f),
+                                start = Offset(x.toFloat(), 0f),
+                                end = Offset(x.toFloat(), size.height),
+                                strokeWidth = 1f
+                            )
+                        }
+                        for (y in 0..size.height.toInt() step gridSize.toInt()) {
+                            drawLine(
+                                Color.Gray.copy(alpha = 0.3f),
+                                start = Offset(0f, y.toFloat()),
+                                end = Offset(size.width, y.toFloat()),
+                                strokeWidth = 1f
+                            )
+                        }
+                    }
+
+                    // El Box para el personaje y la moneda
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Image(
+                            painter = painterResource(id = characterImageRes),
+                            contentDescription = "Player Character",
+                            modifier = Modifier
+                                .size(GameViewModel.PLAYER_SIZE.dp)
+                                .offset(
+                                    x = state.playerPosition.x.dp,
+                                    y = state.playerPosition.y.dp
+                                )
+                        )
+
+                        Image(
+                            painter = painterResource(id = R.drawable.coin),
+                            contentDescription = "Coin",
+                            modifier = Modifier
+                                .size(GameViewModel.COIN_SIZE.dp)
+                                .offset(
+                                    x = state.currentCoinPosition.x.dp,
+                                    y = state.currentCoinPosition.y.dp
+                                )
                         )
                     }
-                    for (y in 0..size.height.toInt() step gridSize.toInt()) {
-                        drawLine(
-                            Color.Gray.copy(alpha = 0.3f),
-                            start = Offset(0f, y.toFloat()),
-                            end = Offset(size.width, y.toFloat()),
-                            strokeWidth = 1f
-                        )
-                    }
-                }
-
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = painterResource(id = characterImageRes),
-                        contentDescription = "Player Character",
-                        modifier = Modifier
-                            .size(GameViewModel.PLAYER_SIZE.dp)
-                            .offset(
-                                x = state.playerPosition.x.dp,
-                                y = state.playerPosition.y.dp
-                            )
-                    )
-
-                    Image(
-                        painter = painterResource(id = R.drawable.coin),
-                        contentDescription = "Coin",
-                        modifier = Modifier
-                            .size(GameViewModel.COIN_SIZE.dp)
-                            .offset(
-                                x = state.currentCoinPosition.x.dp,
-                                y = state.currentCoinPosition.y.dp
-                            )
-                    )
                 }
             }
 
@@ -628,7 +653,7 @@ private fun LevelCompletedScreen(
                         .width(250.dp)
                         .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        containerColor = SecondaryButtonColor
                     )
                 ) {
                     Text(
@@ -676,4 +701,135 @@ private fun ExitConfirmationDialog(
             }
         }
     )
+}
+
+@Composable
+private fun GameOverScreen(
+    state: GameState.GameOver,
+    onRestartGame: () -> Unit,
+    onBackToMenu: () -> Unit,
+    soundManager: SoundManager
+) {
+    var showExitConfirmation by remember { mutableStateOf(false) }
+
+    BackHandler {
+        showExitConfirmation = true
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "¡Tiempo Agotado!",
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.error
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Nivel ${state.level}",
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = "Puntuación: ${state.finalScore}",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = "Monedas recolectadas: ${state.coinsCollected}/${state.totalCoins}",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = "Tiempo: ${formatTime(state.timeElapsed)}",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    soundManager.playButtonSound()
+                    onRestartGame()
+                },
+                modifier = Modifier
+                    .width(250.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    "Intentar de nuevo",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { showExitConfirmation = true },
+                modifier = Modifier
+                    .width(250.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SecondaryButtonColor
+                )
+            ) {
+                Text(
+                    "Volver al menú",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+    }
+
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("¿Salir del juego?") },
+            text = { Text("¿Estás seguro que quieres volver al menú principal?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        soundManager.playButtonSound()
+                        onBackToMenu()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Salir")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        soundManager.playButtonSound()
+                        showExitConfirmation = false
+                    }
+                ) {
+                    Text("Continuar")
+                }
+            }
+        )
+    }
 }
