@@ -41,7 +41,7 @@
 4. Ejecuta el proyecto en un emulador o dispositivo físico.
 
 ## Figma
-https://www.figma.com/proto/og0LQ5G3D8x9airomJ3xVy/app-moviles-%2F-entrega-03?node-id=3-3&node-type=canvas&t=VcwIdCsl1JCJoR2l-0&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=3%3A3&show-proto-sidebar=1
+https://www.figma.com/proto/og0LQ5G3D8x9airomJ3xVy/app-moviles-%2F-entrega-03?node-id=106-66&node-type=canvas&t=V8xlmCsTly8N7l19-0&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=106%3A66&show-proto-sidebar=1
 
 ## canva
 https://www.canva.com/design/DAGVir2FlTE/Zwv3O1Lly-hJ1yYNV2kYZQ/edit?utm_content=DAGVir2FlTE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
